@@ -1,0 +1,17 @@
+Goal: Build a Django-based product scraper for bathingbrands.com.
+
+The project should:
+- Scrape all products (title, description, price, images, SKU, brand, specs) from https://www.bathingbrands.com
+- For each product, save the data in the Django database (Product model)
+- Download all images and link them to each product
+- Be easy to extend with export (CSV, eBay, Amazon, Shopify, etc.)
+- Use requests and BeautifulSoup for scraping, unless JS rendering is needed
+- Prioritize code clarity and reusability (functions/classes over scripts)
+- Provide management commands or scripts to run scraping and exporting
+
+Directory structure:
+- context.txt (this file)
+- bathing_scraper/ (project config)
+- products/ (app: models, scraper, admin, exporters)
+- media/ (for images)
+- manage.py

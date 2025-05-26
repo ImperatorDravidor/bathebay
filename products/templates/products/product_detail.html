@@ -1,0 +1,169 @@
+{% extends 'products/base.html' %}
+
+{% block title %}{{ product.title }} - Bathing Brands{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Products</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ product.title|truncatechars:50 }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Product Images -->
+    <div class="col-md-6">
+        {% if images %}
+            <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for image in images %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <img src="{{ image.image_url }}" 
+                                 class="d-block w-100" 
+                                 alt="{{ image.alt_text|default:product.title }}"
+                                 style="height: 400px; object-fit: cover;"
+                                 onerror="this.src='https://via.placeholder.com/400x400?text=Image+Not+Available'">
+                        </div>
+                    {% endfor %}
+                </div>
+                {% if images|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                {% endif %}
+            </div>
+            
+            <!-- Thumbnail navigation -->
+            {% if images|length > 1 %}
+                <div class="row mt-3">
+                    {% for image in images %}
+                        <div class="col-3">
+                            <img src="{{ image.image_url }}" 
+                                 class="img-thumbnail" 
+                                 alt="{{ image.alt_text|default:product.title }}"
+                                 style="cursor: pointer; height: 80px; object-fit: cover;"
+                                 onclick="document.querySelector('#productCarousel .carousel-item:nth-child({{ forloop.counter }})').click()"
+                                 onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% else %}
+            <img src="https://via.placeholder.com/400x400?text=No+Image+Available" 
+                 class="img-fluid" 
+                 alt="No image available">
+        {% endif %}
+    </div>
+
+    <!-- Product Details -->
+    <div class="col-md-6">
+        <h1>{{ product.title }}</h1>
+        
+        <div class="mb-3">
+            <span class="badge bg-primary me-2">{{ product.brand }}</span>
+            {% if product.category %}
+                <span class="badge bg-secondary me-2">{{ product.category }}</span>
+            {% endif %}
+            {% if product.subcategory %}
+                <span class="badge bg-info">{{ product.subcategory }}</span>
+            {% endif %}
+        </div>
+
+        {% if product.price %}
+            <h2 class="text-success mb-3">${{ product.price }}</h2>
+        {% endif %}
+
+        <div class="mb-3">
+            <strong>SKU:</strong> {{ product.sku }}
+        </div>
+
+        {% if product.description %}
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p>{{ product.description }}</p>
+            </div>
+        {% endif %}
+
+        <!-- Specifications -->
+        {% if product.specifications %}
+            <div class="mb-4">
+                <h5>Specifications</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <tbody>
+                            {% load custom_filters %}
+                            {% for key, value in product.specifications|parse_json.items %}
+                                <tr>
+                                    <td><strong>{{ key }}</strong></td>
+                                    <td>{{ value }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Action buttons -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+            <a href="{{ product.source_url }}" 
+               target="_blank" 
+               class="btn btn-outline-primary">
+                View on Original Site
+            </a>
+            <a href="{% url 'products:product_list' %}?brand={{ product.brand }}" 
+               class="btn btn-outline-secondary">
+                More from {{ product.brand }}
+            </a>
+        </div>
+
+        <!-- Metadata -->
+        <div class="mt-4 text-muted small">
+            <p><strong>Added:</strong> {{ product.created_at|date:"F d, Y" }}</p>
+            {% if product.updated_at != product.created_at %}
+                <p><strong>Updated:</strong> {{ product.updated_at|date:"F d, Y" }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Related Products -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h3>Related Products</h3>
+        <div class="row">
+            {% for related_product in product|related_products:4 %}
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        {% if related_product.images.first %}
+                            <img src="{{ related_product.images.first.image_url }}" 
+                                 class="card-img-top" 
+                                 alt="{{ related_product.title }}"
+                                 style="height: 150px; object-fit: cover;"
+                                 onerror="this.src='https://via.placeholder.com/150x150?text=No+Image'">
+                        {% endif %}
+                        <div class="card-body">
+                            <h6 class="card-title">{{ related_product.title|truncatechars:40 }}</h6>
+                            <p class="small text-muted">{{ related_product.brand }}</p>
+                            {% if related_product.price %}
+                                <p class="text-success">${{ related_product.price }}</p>
+                            {% endif %}
+                            <a href="{% url 'products:product_detail' related_product.slug %}" 
+                               class="btn btn-sm btn-outline-primary">View</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
