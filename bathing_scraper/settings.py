@@ -48,6 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'products.middleware.AdminRedirectMiddleware',  # Custom admin redirect
 ]
 
 ROOT_URLCONF = 'bathing_scraper.urls'
@@ -131,5 +132,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Login/Logout URLs
 LOGIN_URL = '/admin/login/'
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/admin/products/product/'  # Redirect to product catalog after login
 LOGOUT_REDIRECT_URL = '/admin/'

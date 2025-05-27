@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
-from products.scraper_enhanced import EnhancedBathingBrandsScraper
-from products.models import Product # Import Product model
+from products.scrapers import EnhancedBathingBrandsScraper
+from products.models import Product
 
 
 class Command(BaseCommand):

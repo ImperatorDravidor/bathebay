@@ -419,6 +419,11 @@
     <div class="dashboard-header">
         <h1>🏢 Product Catalog Control Center</h1>
         <p>Comprehensive management system for your product catalog with advanced scraping and data management tools</p>
+        <div style="margin-top: 20px;">
+            <a href="{{ site_url }}" target="_blank" class="action-btn btn-info" style="display: inline-flex; align-items: center; text-decoration: none;">
+                <i class="fas fa-external-link-alt"></i> View Main Site
+            </a>
+        </div>
     </div>
 
     <!-- Statistics Overview -->
@@ -536,7 +541,7 @@
                     <a href="{% url 'admin:products_product_changelist' %}" class="action-btn btn-primary">
                         <i class="fas fa-list"></i> View All Products
                     </a>
-                    <a href="/products/" target="_blank" class="action-btn btn-info">
+                    <a href="{{ site_url }}" target="_blank" class="action-btn btn-info">
                         <i class="fas fa-external-link-alt"></i> View Frontend
                     </a>
                 </div>

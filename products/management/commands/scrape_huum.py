@@ -5,7 +5,7 @@ Management command to scrape all HUUM products from bathingbrands.com
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from products.scraper_enhanced import EnhancedBathingBrandsScraper
+from products.scrapers import EnhancedBathingBrandsScraper
 from products.models import Product
 import logging
 

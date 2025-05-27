@@ -8,7 +8,7 @@ from django.db.models import Count, Q, Avg
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from .models import Product, ProductImage, ProductSpecification, ProductDocument, RelatedProduct, ProductVariant
-from .scraper_enhanced import EnhancedBathingBrandsScraper
+from .scrapers import EnhancedBathingBrandsScraper
 import json
 import logging
 import csv
@@ -19,12 +19,83 @@ from io import StringIO
 
 logger = logging.getLogger(__name__)
 
+# Custom Admin Site Class
+class ProductCatalogAdminSite(admin.AdminSite):
+    """Custom admin site that defaults to product catalog"""
+    site_header = "🏢 Product Catalog Control Center"
+    site_title = "Product Admin"
+    index_title = "Product Catalog Management System"
+    
+    def index(self, request, extra_context=None):
+        """Override admin index to redirect to product catalog"""
+        return redirect('/admin/products/product/')
+
+# Create custom admin site instance
+admin_site = ProductCatalogAdminSite(name='product_admin')
+
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['title', 'brand', 'category', 'sku', 'price', 'created_at', 'is_active']
     list_filter = ['brand', 'category', 'is_active', 'created_at']
     search_fields = ['title', 'brand', 'sku', 'model']
     list_per_page = 25
     ordering = ['-created_at']
+    
+    # Enhanced list display with better formatting
+    def get_list_display(self, request):
+        return ['title_with_link', 'brand_badge', 'category_badge', 'sku', 'price_formatted', 'status_badge', 'created_at']
+    
+    def title_with_link(self, obj):
+        """Display title with link to edit"""
+        return format_html(
+            '<a href="{}" style="font-weight: bold; color: #0066cc;">{}</a>',
+            reverse('admin:products_product_change', args=[obj.pk]),
+            obj.title[:50] + ('...' if len(obj.title) > 50 else '')
+        )
+    title_with_link.short_description = 'Product Title'
+    
+    def brand_badge(self, obj):
+        """Display brand as a badge"""
+        colors = {
+            'HUUM': '#ff6b6b', 'Harvia': '#4ecdc4', 'Amerec': '#45b7d1',
+            'Finnmark': '#96ceb4', 'Saunum': '#feca57', 'ThermaSol': '#ff9ff3'
+        }
+        color = colors.get(obj.brand, '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">{}</span>',
+            color, obj.brand
+        )
+    brand_badge.short_description = 'Brand'
+    
+    def category_badge(self, obj):
+        """Display category as a badge"""
+        if obj.category:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px;">{}</span>',
+                obj.category
+            )
+        return format_html('<span style="color: #6c757d;">No Category</span>')
+    category_badge.short_description = 'Category'
+    
+    def price_formatted(self, obj):
+        """Display formatted price"""
+        if obj.price:
+            return format_html(
+                '<span style="font-weight: bold; color: #28a745;">${:,.2f}</span>',
+                obj.price
+            )
+        return format_html('<span style="color: #dc3545;">No Price</span>')
+    price_formatted.short_description = 'Price'
+    
+    def status_badge(self, obj):
+        """Display status badge"""
+        if obj.is_active:
+            return format_html(
+                '<span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px;">✓ Active</span>'
+            )
+        return format_html(
+            '<span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px;">✗ Inactive</span>'
+        )
+    status_badge.short_description = 'Status'
     
     # Custom admin URLs - Comprehensive feature access
     def get_urls(self):
@@ -111,6 +182,7 @@ class ProductAdmin(admin.ModelAdmin):
             'products_missing_description': products_missing_description,
             'data_quality_score': data_quality_score,
             'avg_price': round(avg_price, 2),
+            'site_url': '/',  # Main site URL
         }
         
         return render(request, 'admin/products/dashboard.html', context)
@@ -328,43 +400,104 @@ class ProductAdmin(admin.ModelAdmin):
 # Enhanced admin classes for related models
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ['product', 'image_url', 'is_primary', 'image_type', 'created_at']
+    list_display = ['product', 'image_url_preview', 'is_primary', 'image_type', 'created_at']
     list_filter = ['is_primary', 'image_type', 'created_at']
     search_fields = ['product__title', 'alt_text']
     list_per_page = 50
     ordering = ['-created_at']
+    
+    def image_url_preview(self, obj):
+        """Show image preview"""
+        if obj.image_url:
+            return format_html(
+                '<a href="{}" target="_blank"><img src="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;"></a>',
+                obj.image_url, obj.image_url
+            )
+        return "No Image"
+    image_url_preview.short_description = 'Preview'
 
 @admin.register(ProductSpecification)
 class ProductSpecificationAdmin(admin.ModelAdmin):
-    list_display = ['product', 'name', 'value', 'created_at']
+    list_display = ['product', 'name', 'value_preview', 'created_at']
     search_fields = ['product__title', 'name', 'value']
     list_filter = ['name', 'created_at']
     list_per_page = 50
     ordering = ['product', 'name']
+    
+    def value_preview(self, obj):
+        """Show truncated value"""
+        if len(obj.value) > 50:
+            return obj.value[:50] + '...'
+        return obj.value
+    value_preview.short_description = 'Value'
 
 @admin.register(ProductDocument)
 class ProductDocumentAdmin(admin.ModelAdmin):
-    list_display = ['product', 'title', 'document_type', 'created_at']
+    list_display = ['product', 'title', 'document_type_badge', 'document_link', 'created_at']
     list_filter = ['document_type', 'created_at']
     search_fields = ['product__title', 'title']
     list_per_page = 50
     ordering = ['-created_at']
+    
+    def document_type_badge(self, obj):
+        """Display document type as badge"""
+        colors = {
+            'manual': '#007bff', 'installation': '#28a745', 
+            'warranty': '#ffc107', 'specification': '#17a2b8'
+        }
+        color = colors.get(obj.document_type, '#6c757d')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px;">{}</span>',
+            color, obj.document_type.title()
+        )
+    document_type_badge.short_description = 'Type'
+    
+    def document_link(self, obj):
+        """Show document link"""
+        return format_html(
+            '<a href="{}" target="_blank" style="color: #007bff;">📄 View</a>',
+            obj.document_url
+        )
+    document_link.short_description = 'Link'
 
 @admin.register(RelatedProduct)
 class RelatedProductAdmin(admin.ModelAdmin):
-    list_display = ['main_product', 'related_product', 'relationship_type', 'is_mandatory', 'created_at']
+    list_display = ['main_product', 'related_product', 'relationship_badge', 'is_mandatory', 'created_at']
     list_filter = ['relationship_type', 'is_mandatory', 'created_at']
     search_fields = ['main_product__title', 'related_product__title']
     list_per_page = 50
     ordering = ['-created_at']
+    
+    def relationship_badge(self, obj):
+        """Display relationship type as badge"""
+        return format_html(
+            '<span style="background-color: #6f42c1; color: white; padding: 2px 6px; border-radius: 8px; font-size: 10px;">{}</span>',
+            obj.get_relationship_type_display()
+        )
+    relationship_badge.short_description = 'Relationship'
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ['product', 'variant_type', 'variant_value', 'price_modifier']
+    list_display = ['product', 'variant_type', 'variant_value', 'price_modifier_formatted']
     list_filter = ['variant_type']
     search_fields = ['product__title', 'variant_value']
     list_per_page = 50
     ordering = ['product', 'variant_type']
+    
+    def price_modifier_formatted(self, obj):
+        """Format price modifier"""
+        if obj.price_modifier > 0:
+            return format_html(
+                '<span style="color: #28a745;">+${:.2f}</span>',
+                obj.price_modifier
+            )
+        elif obj.price_modifier < 0:
+            return format_html(
+                '<span style="color: #dc3545;">${:.2f}</span>',
+                obj.price_modifier
+            )
+        return '$0.00'
+    price_modifier_formatted.short_description = 'Price Modifier'
 
 # Register the main Product admin - SINGLE REGISTRATION POINT
 admin.site.register(Product, ProductAdmin)
