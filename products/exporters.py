@@ -41,7 +41,7 @@ class CSVExporter(ProductExporter):
                 product.brand,
                 product.category,
                 product.subcategory,
-                product.description,
+                product.short_description or product.full_description,
                 product.price or '',
                 product.specifications,
                 product.source_url,
@@ -81,7 +81,7 @@ class eBayExporter(ProductExporter):
             title = product.title[:77] + "..." if len(product.title) > 80 else product.title
             
             # Create description with specifications
-            description = f"<p>{product.description}</p>"
+            description = f"<p>{product.short_description or product.full_description or 'No description available'}</p>"
             if product.specifications:
                 try:
                     specs = json.loads(product.specifications)
@@ -199,7 +199,7 @@ class ShopifyExporter(ProductExporter):
             handle = ''.join(c for c in handle if c.isalnum() or c == '-')
             
             # Create HTML description
-            description = f"<p>{product.description}</p>"
+            description = f"<p>{product.short_description or product.full_description or 'No description available'}</p>"
             if product.specifications:
                 try:
                     specs = json.loads(product.specifications)
@@ -249,7 +249,7 @@ class ShopifyExporter(ProductExporter):
                 product.title,  # Image Alt Text
                 'FALSE',  # Gift Card
                 product.title,  # SEO Title
-                product.description[:160] if product.description else '',  # SEO Description
+                (product.short_description or product.full_description or '')[:160],  # SEO Description
                 'Home & Garden',  # Google Shopping Category
                 '',  # Google Shopping Gender
                 '',  # Google Shopping Age Group

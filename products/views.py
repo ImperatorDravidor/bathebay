@@ -1,8 +1,10 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
 from .models import Product
 
 
+@login_required
 def product_list(request):
     """Display paginated list of all products"""
     products = Product.objects.filter(is_active=True).select_related().prefetch_related('images')
@@ -34,6 +36,7 @@ def product_list(request):
     return render(request, 'products/product_list.html', context)
 
 
+@login_required
 def product_detail(request, slug):
     """Display detailed view of a single product"""
     product = get_object_or_404(Product, slug=slug, is_active=True)

@@ -1,0 +1,235 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls static admin_list %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.breadcrumb {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+.breadcrumb a {
+    color: #007cba;
+    text-decoration: none;
+}
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+.product-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    gap: 15px;
+}
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+.product-image {
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 0.9em;
+}
+.product-info {
+    flex-grow: 1;
+}
+.product-actions {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.stats-overview {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+}
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 4px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: center;
+    white-space: nowrap;
+}
+.btn-primary {
+    background: #007cba;
+    color: white;
+}
+.btn-primary:hover {
+    background: #005a87;
+}
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+.btn-secondary:hover {
+    background: #545b62;
+}
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+.btn-success:hover {
+    background: #1e7e34;
+}
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+.btn-warning:hover {
+    background: #e0a800;
+}
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8em;
+}
+.price-tag {
+    background: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
+}
+.sku-tag {
+    background: #6c757d;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    font-family: monospace;
+}
+.specs-count {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-main">
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb">
+        <a href="{% url 'admin:products_brand_hierarchy' %}">🏢 All Brands</a> → 
+        <a href="{% url 'admin:products_category_view' brand=brand %}">📂 {{ brand }}</a> → 
+        <a href="{% url 'admin:products_collection_view' brand=brand category=category %}">📦 {{ category }}</a> → 
+        <strong>🛍️ {{ collection }}</strong>
+    </div>
+
+    <h1>{{ title }}</h1>
+    
+    <!-- Collection Overview -->
+    <div class="stats-overview">
+        <h3 style="margin-top: 0;">🛍️ {{ brand }} → {{ category }} → {{ collection }}</h3>
+        <p><strong>{{ products|length }}</strong> products in this collection</p>
+        
+        <div style="margin-top: 15px;">
+            <a href="{% url 'admin:products_scraping_control' %}" class="btn btn-success">
+                🚀 Scrape More Products
+            </a>
+            <a href="{% url 'admin:products_product_changelist' %}?brand={{ brand|urlencode }}&category={{ category|urlencode }}&subcategory={{ collection|urlencode }}" class="btn btn-secondary">
+                📋 Admin View
+            </a>
+        </div>
+    </div>
+
+    <!-- Products List -->
+    <div style="margin: 20px 0;">
+        {% for product in products %}
+        <div class="product-card">
+            <!-- Product Image -->
+            <div class="product-image">
+                {% with product.images.first as primary_image %}
+                    {% if primary_image and primary_image.image_url %}
+                        <img src="{{ primary_image.image_url }}" alt="{{ product.title }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                    {% else %}
+                        📷 No Image
+                    {% endif %}
+                {% endwith %}
+            </div>
+            
+            <!-- Product Information -->
+            <div class="product-info">
+                <h4 style="margin: 0 0 10px 0; color: #007cba;">
+                    {{ product.title }}
+                </h4>
+                
+                <div style="margin-bottom: 8px;">
+                    <span class="sku-tag">{{ product.sku }}</span>
+                    {% if product.model %}
+                        <span class="sku-tag" style="background: #17a2b8;">{{ product.model }}</span>
+                    {% endif %}
+                </div>
+                
+                {% if product.price %}
+                    <div class="price-tag">${{ product.price }}</div>
+                {% endif %}
+                
+                {% if product.short_description %}
+                    <p style="margin: 10px 0; color: #666; font-size: 0.9em;">
+                        {{ product.short_description|truncatechars:150 }}
+                    </p>
+                {% endif %}
+                
+                <div class="specs-count">
+                    📷 {{ product.images.count }} images • 
+                    📋 {{ product.product_specifications.count }} specs • 
+                    📄 {{ product.documents.count }} docs
+                </div>
+            </div>
+            
+            <!-- Product Actions -->
+            <div class="product-actions">
+                <a href="/product/{{ product.slug }}/" class="btn btn-primary btn-sm" target="_blank">
+                    👁️ View
+                </a>
+                <a href="{% url 'admin:products_product_change' product.pk %}" class="btn btn-secondary btn-sm">
+                    ✏️ Edit
+                </a>
+                {% if product.source_url %}
+                    <a href="{{ product.source_url }}" class="btn btn-warning btn-sm" target="_blank">
+                        🔗 Source
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px;">
+            <h3>No products found in {{ collection }}</h3>
+            <p>This collection might need products scraped from bathingbrands.com</p>
+            <a href="{% url 'admin:products_scraping_control' %}" class="btn btn-success">
+                🚀 Start Scraping
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

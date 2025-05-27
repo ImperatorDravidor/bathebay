@@ -1,169 +1,298 @@
 {% extends 'products/base.html' %}
+{% load custom_filters %}
 
 {% block title %}{{ product.title }} - Bathing Brands{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Products</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ product.title|truncatechars:50 }}</li>
-            </ol>
-        </nav>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Products</a></li>
+                    {% if product.category %}
+                        <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}?category={{ product.category|urlencode }}">{{ product.category }}</a></li>
+                    {% endif %}
+                    {% if product.subcategory %}
+                        <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}?subcategory={{ product.subcategory|urlencode }}">{{ product.subcategory }}</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ product.title|truncatechars:50 }}</li>
+                </ol>
+            </nav>
+        </div>
     </div>
-</div>
 
-<div class="row">
-    <!-- Product Images -->
-    <div class="col-md-6">
-        {% if images %}
-            <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-inner">
-                    {% for image in images %}
-                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                            <img src="{{ image.image_url }}" 
-                                 class="d-block w-100" 
-                                 alt="{{ image.alt_text|default:product.title }}"
-                                 style="height: 400px; object-fit: cover;"
-                                 onerror="this.src='https://via.placeholder.com/400x400?text=Image+Not+Available'">
-                        </div>
-                    {% endfor %}
+    <div class="row">
+        <!-- Product Images -->
+        <div class="col-md-6 mb-4">
+            {% if product.images.exists %}
+                <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        {% for image in product.images.all %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                <img src="{{ image.image_url }}" 
+                                     class="d-block w-100 rounded" 
+                                     alt="{{ image.alt_text|default:product.title }}"
+                                     style="height: 450px; object-fit: cover;"
+                                     onerror="this.onerror=null; this.src='https://via.placeholder.com/600x450?text=Image+Not+Available'">
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if product.images.count > 1 %}
+                        <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    {% endif %}
                 </div>
-                {% if images|length > 1 %}
-                    <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
+                
+                {% if product.images.count > 1 %}
+                    <div class="row gx-2 mt-3">
+                        {% for image in product.images.all %}
+                            <div class="col-2">
+                                <img src="{{ image.image_url }}" 
+                                     class="img-thumbnail" 
+                                     alt="Thumbnail {{ forloop.counter }}: {{ image.alt_text|default:product.title }}"
+                                     style="cursor: pointer; height: 70px; width: 100%; object-fit: cover;"
+                                     data-bs-target="#productCarousel" 
+                                     data-bs-slide-to="{{ forloop.counter0 }}"
+                                     onerror="this.onerror=null; this.src='https://via.placeholder.com/80x70?text=Thumb'">
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% else %}
+                <img src="https://via.placeholder.com/600x450?text=No+Image+Available" 
+                     class="img-fluid rounded" 
+                     alt="No image available">
+            {% endif %}
+        </div>
+
+        <!-- Product Details -->
+        <div class="col-md-6">
+            <h1 class="mb-3">{{ product.title }}</h1>
+            
+            <div class="mb-3">
+                <span class="badge bg-primary me-1 fs-6">{{ product.brand }}</span>
+                {% if product.model %}
+                    <span class="text-muted">Model: {{ product.model }}</span>
                 {% endif %}
             </div>
+
+            {% if product.price %}
+                <h2 class="text-success mb-3 fw-bold">${{ product.price|floatformat:2 }}</h2>
+            {% else %}
+                 <p class="text-muted mb-3">Price not available</p>
+            {% endif %}
+
+            <p class="mb-2"><strong>SKU:</strong> {{ product.sku }}</p>
+            {% if product.category %}
+                <p class="mb-1"><small class="text-muted">Category: {{ product.category }}{% if product.subcategory %} > {{ product.subcategory }}{% endif %}</small></p>
+            {% endif %}
             
-            <!-- Thumbnail navigation -->
-            {% if images|length > 1 %}
-                <div class="row mt-3">
-                    {% for image in images %}
-                        <div class="col-3">
-                            <img src="{{ image.image_url }}" 
-                                 class="img-thumbnail" 
-                                 alt="{{ image.alt_text|default:product.title }}"
-                                 style="cursor: pointer; height: 80px; object-fit: cover;"
-                                 onclick="document.querySelector('#productCarousel .carousel-item:nth-child({{ forloop.counter }})').click()"
-                                 onerror="this.src='https://via.placeholder.com/80x80?text=No+Image'">
+            {% if product.short_description %}
+                <p class="lead mt-3">{{ product.short_description }}</p>
+            {% endif %}
+
+            <!-- Action buttons -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start my-4">
+                <a href="{{ product.source_url }}" 
+                   target="_blank" 
+                   class="btn btn-primary btn-lg px-4 me-md-2">
+                    View on Original Site
+                </a>
+                <a href="{% url 'products:product_list' %}?brand={{ product.brand|urlencode }}" 
+                   class="btn btn-outline-secondary btn-lg px-4">
+                    More from {{ product.brand }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs for Description, Features, Specs etc. -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs" id="productInfoTabs" role="tablist">
+                {% if product.full_description %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="true">Description</button>
+                </li>
+                {% endif %}
+                {% if product.features %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not product.full_description %}active{% endif %}" id="features-tab" data-bs-toggle="tab" data-bs-target="#features" type="button" role="tab" aria-controls="features" aria-selected="{% if not product.full_description %}true{% else %}false{% endif %}">Features</button>
+                </li>
+                {% endif %}
+                {% if product.product_specifications.exists or product.specifications %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not product.full_description and not product.features %}active{% endif %}" id="specifications-tab" data-bs-toggle="tab" data-bs-target="#specifications" type="button" role="tab" aria-controls="specifications" aria-selected="{% if not product.full_description and not product.features %}true{% else %}false{% endif %}">Specifications</button>
+                </li>
+                {% endif %}
+                {% if product.includes %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="includes-tab" data-bs-toggle="tab" data-bs-target="#includes" type="button" role="tab" aria-controls="includes" aria-selected="false">Includes</button>
+                </li>
+                {% endif %}
+                {% if product.technical_info %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="technical-tab" data-bs-toggle="tab" data-bs-target="#technical" type="button" role="tab" aria-controls="technical" aria-selected="false">Technical Info</button>
+                </li>
+                {% endif %}
+                {% if product.inspiration_content %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="inspiration-tab" data-bs-toggle="tab" data-bs-target="#inspiration" type="button" role="tab" aria-controls="inspiration" aria-selected="false">Inspiration</button>
+                </li>
+                {% endif %}
+                {% if product.documents.exists %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab" aria-controls="documents" aria-selected="false">Documents</button>
+                </li>
+                {% endif %}
+            </ul>
+            <div class="tab-content pt-3" id="productInfoTabsContent">
+                {% if product.full_description %}
+                <div class="tab-pane fade show active" id="description" role="tabpanel" aria-labelledby="description-tab">
+                    {{ product.full_description|linebreaks }}
+                </div>
+                {% endif %}
+                {% if product.features %}
+                <div class="tab-pane fade {% if not product.full_description %}show active{% endif %}" id="features" role="tabpanel" aria-labelledby="features-tab">
+                    {{ product.features|linebreaks }}
+                </div>
+                {% endif %}
+                
+                {% if product.product_specifications.exists or product.specifications %}
+                <div class="tab-pane fade {% if not product.full_description and not product.features %}show active{% endif %}" id="specifications" role="tabpanel" aria-labelledby="specifications-tab">
+                    <h5>Product Specifications</h5>
+                    {% if product.product_specifications.exists %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <tbody>
+                                    {% for spec in product.product_specifications.all %}
+                                        <tr>
+                                            <td style="width: 30%;"><strong>{{ spec.name }}</strong></td>
+                                            <td>{{ spec.value|linebreaksbr }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% elif product.specifications %}
+                         <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <tbody>
+                                {% with specs_dict=product.specifications|parse_json %}
+                                    {% for key, value in specs_dict.items %}
+                                        <tr>
+                                            <td style="width: 30%;"><strong>{{ key }}</strong></td>
+                                            <td>{{ value|linebreaksbr }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endwith %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p>No specifications available.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if product.includes %}
+                <div class="tab-pane fade" id="includes" role="tabpanel" aria-labelledby="includes-tab">
+                    {{ product.includes|linebreaks }}
+                </div>
+                {% endif %}
+                {% if product.technical_info %}
+                <div class="tab-pane fade" id="technical" role="tabpanel" aria-labelledby="technical-tab">
+                    {{ product.technical_info|linebreaks }}
+                </div>
+                {% endif %}
+                {% if product.inspiration_content %}
+                <div class="tab-pane fade" id="inspiration" role="tabpanel" aria-labelledby="inspiration-tab">
+                    {{ product.inspiration_content|linebreaks }}
+                </div>
+                {% endif %}
+                {% if product.documents.exists %}
+                <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+                    <h5>Available Documents</h5>
+                    <ul class="list-group">
+                        {% for doc in product.documents.all %}
+                        <li class="list-group-item">
+                            <a href="{{ doc.document_url }}" target="_blank" rel="noopener noreferrer">
+                                {{ doc.title|default:"Download Document" }} 
+                                <small class="text-muted">({{ doc.get_document_type_display|default:"PDF" }})</small>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products Sections -->
+    {% regroup product.related_products_as_main.all by get_relationship_type_display as related_groups %}
+    {% for group in related_groups %}
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3 class="mb-3">{{ group.grouper }}</h3>
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+                    {% for rel in group.list %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                {% if rel.related_product.images.first %}
+                                    <img src="{{ rel.related_product.images.first.image_url }}" 
+                                         class="card-img-top" 
+                                         alt="{{ rel.related_product.title }}"
+                                         style="height: 200px; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                                {% else %}
+                                    <img src="https://via.placeholder.com/300x200?text=No+Image" 
+                                         class="card-img-top" 
+                                         alt="No image for {{ rel.related_product.title }}"
+                                         style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="card-title">
+                                        <a href="{% url 'products:product_detail' rel.related_product.slug %}" class="text-decoration-none">{{ rel.related_product.title|truncatechars:50 }}</a>
+                                    </h6>
+                                    <p class="small text-muted mb-1">{{ rel.related_product.brand }}{% if rel.related_product.model %} - {{ rel.related_product.model }}{% endif %}</p>
+                                    {% if rel.related_product.price %}
+                                        <p class="card-text fw-bold text-success mt-auto mb-2">${{ rel.related_product.price|floatformat:2 }}</p>
+                                    {% else %}
+                                        <p class="card-text text-muted mt-auto mb-2">Price not available</p>
+                                    {% endif %}
+                                    <a href="{% url 'products:product_detail' rel.related_product.slug %}" 
+                                       class="btn btn-sm btn-outline-primary stretched-link mt-auto">View Details</a>
+                                </div>
+                                {% if rel.description %}
+                                    <div class="card-footer bg-transparent border-top-0">
+                                        <small class="text-muted">{{ rel.description }}</small>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     {% endfor %}
                 </div>
-            {% endif %}
-        {% else %}
-            <img src="https://via.placeholder.com/400x400?text=No+Image+Available" 
-                 class="img-fluid" 
-                 alt="No image available">
-        {% endif %}
-    </div>
-
-    <!-- Product Details -->
-    <div class="col-md-6">
-        <h1>{{ product.title }}</h1>
-        
-        <div class="mb-3">
-            <span class="badge bg-primary me-2">{{ product.brand }}</span>
-            {% if product.category %}
-                <span class="badge bg-secondary me-2">{{ product.category }}</span>
-            {% endif %}
-            {% if product.subcategory %}
-                <span class="badge bg-info">{{ product.subcategory }}</span>
-            {% endif %}
-        </div>
-
-        {% if product.price %}
-            <h2 class="text-success mb-3">${{ product.price }}</h2>
-        {% endif %}
-
-        <div class="mb-3">
-            <strong>SKU:</strong> {{ product.sku }}
-        </div>
-
-        {% if product.description %}
-            <div class="mb-4">
-                <h5>Description</h5>
-                <p>{{ product.description }}</p>
             </div>
-        {% endif %}
-
-        <!-- Specifications -->
-        {% if product.specifications %}
-            <div class="mb-4">
-                <h5>Specifications</h5>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <tbody>
-                            {% load custom_filters %}
-                            {% for key, value in product.specifications|parse_json.items %}
-                                <tr>
-                                    <td><strong>{{ key }}</strong></td>
-                                    <td>{{ value }}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        {% endif %}
-
-        <!-- Action buttons -->
-        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
-            <a href="{{ product.source_url }}" 
-               target="_blank" 
-               class="btn btn-outline-primary">
-                View on Original Site
-            </a>
-            <a href="{% url 'products:product_list' %}?brand={{ product.brand }}" 
-               class="btn btn-outline-secondary">
-                More from {{ product.brand }}
-            </a>
         </div>
+    {% endfor %}
 
-        <!-- Metadata -->
-        <div class="mt-4 text-muted small">
-            <p><strong>Added:</strong> {{ product.created_at|date:"F d, Y" }}</p>
-            {% if product.updated_at != product.created_at %}
-                <p><strong>Updated:</strong> {{ product.updated_at|date:"F d, Y" }}</p>
-            {% endif %}
+    <!-- Metadata -->
+    <div class="row mt-5">
+        <div class="col-12 text-center text-muted small">
+            <hr>
+            <p class="mb-1"><strong>Product ID:</strong> {{ product.id }} | <strong>SKU:</strong> {{ product.sku }}</p>
+            <p class="mb-1"><strong>Last Updated:</strong> {{ product.updated_at|date:"F d, Y, P" }}</p>
+            <p class="mb-0"><strong>Source:</strong> <a href="{{ product.source_url }}" target="_blank" rel="noopener noreferrer">Original Listing</a></p>
         </div>
     </div>
-</div>
 
-<!-- Related Products -->
-<div class="row mt-5">
-    <div class="col-12">
-        <h3>Related Products</h3>
-        <div class="row">
-            {% for related_product in product|related_products:4 %}
-                <div class="col-md-3 mb-3">
-                    <div class="card">
-                        {% if related_product.images.first %}
-                            <img src="{{ related_product.images.first.image_url }}" 
-                                 class="card-img-top" 
-                                 alt="{{ related_product.title }}"
-                                 style="height: 150px; object-fit: cover;"
-                                 onerror="this.src='https://via.placeholder.com/150x150?text=No+Image'">
-                        {% endif %}
-                        <div class="card-body">
-                            <h6 class="card-title">{{ related_product.title|truncatechars:40 }}</h6>
-                            <p class="small text-muted">{{ related_product.brand }}</p>
-                            {% if related_product.price %}
-                                <p class="text-success">${{ related_product.price }}</p>
-                            {% endif %}
-                            <a href="{% url 'products:product_detail' related_product.slug %}" 
-                               class="btn btn-sm btn-outline-primary">View</a>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
 </div>
 {% endblock %} 

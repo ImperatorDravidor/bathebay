@@ -1,0 +1,154 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls static admin_list %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.breadcrumb {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin: 20px 0;
+}
+.breadcrumb a {
+    color: #007cba;
+    text-decoration: none;
+}
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+.collection-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.collection-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+.collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+.stats-overview {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+}
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 4px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-primary {
+    background: #007cba;
+    color: white;
+}
+.btn-primary:hover {
+    background: #005a87;
+}
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+.btn-secondary:hover {
+    background: #545b62;
+}
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+.btn-success:hover {
+    background: #1e7e34;
+}
+.btn-warning {
+    background: #ffc107;
+    color: #212529;
+}
+.btn-warning:hover {
+    background: #e0a800;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-main">
+    <!-- Breadcrumb Navigation -->
+    <div class="breadcrumb">
+        <a href="{% url 'admin:products_brand_hierarchy' %}">🏢 All Brands</a> → 
+        <a href="{% url 'admin:products_category_view' brand=brand %}">📂 {{ brand }}</a> → 
+        <strong>📦 {{ category }}</strong>
+    </div>
+
+    <h1>{{ title }}</h1>
+    
+    <!-- Category Overview -->
+    <div class="stats-overview">
+        <h3 style="margin-top: 0;">📦 {{ brand }} → {{ category }}</h3>
+        <p><strong>{{ category_product_count }}</strong> total products across <strong>{{ collections|length }}</strong> collections</p>
+        
+        <div style="margin-top: 15px;">
+            <a href="{% url 'admin:products_scraping_control' %}" class="btn btn-success">
+                🚀 Scrape More Products
+            </a>
+            <a href="{% url 'admin:products_product_changelist' %}?brand={{ brand|urlencode }}&category={{ category|urlencode }}" class="btn btn-secondary">
+                📋 View All Products
+            </a>
+        </div>
+    </div>
+
+    <!-- Collections Grid -->
+    <div class="collection-grid">
+        {% for collection in collections %}
+        <div class="collection-card">
+            <h3 style="margin-top: 0; color: #fd7e14;">
+                📦 {{ collection.subcategory|default:"General" }}
+            </h3>
+            
+            <div style="margin: 15px 0;">
+                <div style="font-size: 1.2em; margin-bottom: 5px;">
+                    <strong>{{ collection.product_count }}</strong> products
+                </div>
+                <div style="color: #666; font-size: 0.9em;">
+                    in {{ brand }} → {{ category }}
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <a href="{% url 'admin:products_product_list' brand=brand category=category collection=collection.subcategory %}" class="btn btn-primary">
+                    🛍️ View Products
+                </a>
+                <a href="{% url 'admin:products_product_changelist' %}?brand={{ brand|urlencode }}&category={{ category|urlencode }}&subcategory={{ collection.subcategory|urlencode }}" class="btn btn-secondary">
+                    📋 Admin View
+                </a>
+            </div>
+        </div>
+        {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+            <h3>No collections found for {{ brand }} → {{ category }}</h3>
+            <p>This category might need more products scraped or better organization.</p>
+            <a href="{% url 'admin:products_scraping_control' %}" class="btn btn-success">
+                🚀 Scrape More Products
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 
