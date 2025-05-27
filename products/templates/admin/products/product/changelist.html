@@ -1,0 +1,201 @@
+{% extends "admin/change_list.html" %}
+{% load admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .hierarchy-dashboard {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .hierarchy-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    
+    .stat-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .brand-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .brand-card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .brand-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .brand-name {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2c5aa0;
+    }
+    
+    .category-list {
+        margin-top: 10px;
+    }
+    
+    .category-item {
+        display: flex;
+        justify-content: between;
+        padding: 5px 0;
+        border-bottom: 1px solid #f5f5f5;
+    }
+    
+    .quick-actions {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .action-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: #2c5aa0;
+        color: white;
+    }
+    
+    .btn-success {
+        background: #28a745;
+        color: white;
+    }
+    
+    .btn-info {
+        background: #17a2b8;
+        color: white;
+    }
+    
+    .btn-warning {
+        background: #ffc107;
+        color: #212529;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content_title %}
+<div class="hierarchy-dashboard">
+    <h1><i class="fas fa-sitemap"></i> Product Catalog Hierarchy Manager</h1>
+    <p>Manage your product catalog with intelligent hierarchy navigation and frontend synchronization</p>
+    
+    <div class="hierarchy-stats">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_products|default:0 }}</div>
+            <div>Total Products</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_brands|default:0 }}</div>
+            <div>Brands</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ brand_stats|length|default:0 }}</div>
+            <div>Active Brands</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">
+                {% for brand, stats in brand_stats.items %}{{ stats.total_categories }}{% if not forloop.last %}+{% endif %}{% endfor %}
+            </div>
+            <div>Categories</div>
+        </div>
+    </div>
+    
+    <div class="quick-actions">
+        <a href="{% url 'admin:products_scraping_control' %}" class="action-btn btn-success">
+            <i class="fas fa-download"></i> Scraping Control
+        </a>
+        <a href="{% url 'admin:products_brand_hierarchy' %}" class="action-btn btn-primary">
+            <i class="fas fa-sitemap"></i> Hierarchy View
+        </a>
+        <a href="/products/" target="_blank" class="action-btn btn-info">
+            <i class="fas fa-external-link-alt"></i> View Frontend
+        </a>
+        <a href="{% url 'admin:products_export_data' %}" class="action-btn btn-warning">
+            <i class="fas fa-file-export"></i> Export Data
+        </a>
+        <a href="{% url 'admin:products_product_add' %}" class="action-btn btn-warning">
+            <i class="fas fa-plus"></i> Add Product
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block result_list %}
+{% if brand_stats %}
+<div class="brand-grid">
+    {% for brand, stats in brand_stats.items %}
+    <div class="brand-card">
+        <div class="brand-header">
+            <div class="brand-name">🏢 {{ brand }}</div>
+            <div style="font-weight: bold; color: #28a745;">{{ stats.total_products }} products</div>
+        </div>
+        
+        <div class="category-list">
+            {% for category in stats.categories %}
+            <div class="category-item">
+                <span>📂 {{ category.category }}</span>
+                <span style="color: #666; font-size: 0.9rem;">{{ category.product_count }} items</span>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="quick-actions" style="margin-top: 10px;">
+            <a href="?brand={{ brand }}" class="action-btn btn-primary" style="font-size: 0.8rem; padding: 6px 12px;">
+                <i class="fas fa-filter"></i> Filter
+            </a>
+            <a href="/products/?brand={{ brand }}" target="_blank" class="action-btn btn-info" style="font-size: 0.8rem; padding: 6px 12px;">
+                <i class="fas fa-eye"></i> View Frontend
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{{ block.super }}
+{% endblock %} 

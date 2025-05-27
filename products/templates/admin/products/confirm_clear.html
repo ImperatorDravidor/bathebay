@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls static %}
+
+{% block title %}Clear All Products | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+<style>
+.confirm-form {
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.warning-box {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+    color: #856404;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin: 10px;
+}
+
+.btn-danger { background: #dc3545; color: white; }
+.btn-secondary { background: #6c757d; color: white; }
+
+.btn:hover {
+    opacity: 0.9;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="confirm-form">
+    <h1>🗑️ Clear All Products</h1>
+    
+    <div class="warning-box">
+        <strong>⚠️ Warning!</strong>
+        <p>This action will permanently delete <strong>{{ product_count }}</strong> products from the database.</p>
+        <p>This action cannot be undone!</p>
+    </div>
+    
+    {% if product_count > 0 %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">
+            🗑️ Yes, Delete All {{ product_count }} Products
+        </button>
+        <a href="{% url 'admin:products_product_changelist' %}" class="btn btn-secondary">
+            ← Cancel
+        </a>
+    </form>
+    {% else %}
+    <p>No products to delete.</p>
+    <a href="{% url 'admin:products_product_changelist' %}" class="btn btn-secondary">
+        ← Back to Products
+    </a>
+    {% endif %}
+</div>
+{% endblock %} 

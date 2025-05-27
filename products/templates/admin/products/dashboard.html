@@ -1,0 +1,627 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+:root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #34495e;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --info-color: #3498db;
+    --light-bg: #f8f9fa;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --border-radius: 8px;
+    --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --text-dark: #2c3e50;
+    --text-light: #ffffff;
+    --text-muted: #6c757d;
+}
+
+.dashboard-container {
+    padding: 20px;
+    background: var(--gradient-bg);
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    margin-bottom: 30px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+}
+
+.dashboard-header h1 {
+    color: var(--primary-color);
+    margin: 0 0 10px 0;
+    font-size: 2.5rem;
+    font-weight: 300;
+}
+
+.dashboard-header p {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.stat-number {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.quality-score {
+    color: var(--success-color);
+}
+
+.actions-section {
+    background: white;
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 30px;
+}
+
+.actions-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.action-category {
+    background: var(--light-bg);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+}
+
+.action-category h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    color: white;
+}
+
+.action-btn i {
+    margin-right: 10px;
+    font-size: 1.1rem;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-warning {
+    background: var(--warning-color);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-info {
+    background: var(--info-color);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.action-btn:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    color: white;
+    text-decoration: none;
+}
+
+.data-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.overview-card {
+    background: white;
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+}
+
+.overview-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--light-bg);
+    padding-bottom: 10px;
+}
+
+.brand-list, .category-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--light-bg);
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.item-name {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.item-count {
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.recent-products {
+    background: white;
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+}
+
+.recent-products h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.product-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--light-bg);
+}
+
+.product-item:last-child {
+    border-bottom: none;
+}
+
+.product-info {
+    flex-grow: 1;
+}
+
+.product-title {
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 5px;
+}
+
+.product-meta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.quality-indicators {
+    background: white;
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 30px;
+}
+
+.quality-indicators h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.quality-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.quality-item {
+    text-align: center;
+    padding: 15px;
+    background: var(--light-bg);
+    border-radius: 6px;
+}
+
+.quality-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--danger-color);
+    margin-bottom: 5px;
+}
+
+.quality-label {
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+.management-commands {
+    background: white;
+    padding: 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 30px;
+}
+
+.management-commands h3 {
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.command-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.command-input {
+    flex-grow: 1;
+    min-width: 200px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    color: var(--text-dark);
+    background: white;
+}
+
+.command-btn {
+    padding: 10px 20px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.command-btn:hover {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.quick-commands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.quick-cmd {
+    padding: 8px 15px;
+    background: var(--light-bg);
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    color: var(--text-dark);
+}
+
+.quick-cmd:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 10px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .data-overview {
+        grid-template-columns: 1fr;
+    }
+    
+    .command-form {
+        flex-direction: column;
+    }
+    
+    .command-input {
+        min-width: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1>🏢 Product Catalog Control Center</h1>
+        <p>Comprehensive management system for your product catalog with advanced scraping and data management tools</p>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_products }}</div>
+            <div class="stat-label">Total Products</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_brands }}</div>
+            <div class="stat-label">Brands</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_categories }}</div>
+            <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number quality-score">{{ data_quality_score }}%</div>
+            <div class="stat-label">Data Quality Score</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">${{ avg_price }}</div>
+            <div class="stat-label">Average Price</div>
+        </div>
+    </div>
+
+    <!-- Data Quality Indicators -->
+    <div class="quality-indicators">
+        <h3>📊 Data Quality Indicators</h3>
+        <div class="quality-grid">
+            <div class="quality-item">
+                <div class="quality-number">{{ products_missing_images }}</div>
+                <div class="quality-label">Missing Images</div>
+            </div>
+            <div class="quality-item">
+                <div class="quality-number">{{ products_missing_price }}</div>
+                <div class="quality-label">Missing Prices</div>
+            </div>
+            <div class="quality-item">
+                <div class="quality-number">{{ products_missing_description }}</div>
+                <div class="quality-label">Missing Descriptions</div>
+            </div>
+            <div class="quality-item">
+                <div class="quality-number">{{ active_products }}</div>
+                <div class="quality-label">Active Products</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Categories -->
+    <div class="actions-section">
+        <h2>🚀 Quick Actions & Tools</h2>
+        <div class="action-grid">
+            <!-- Scraping Tools -->
+            <div class="action-category">
+                <h3>🔄 Scraping Tools</h3>
+                <div class="action-buttons">
+                    <a href="{% url 'admin:products_scraping_control' %}" class="action-btn btn-primary">
+                        <i class="fas fa-cogs"></i> Advanced Scraping Control
+                    </a>
+                    <a href="{% url 'admin:products_scrape_huum' %}" class="action-btn btn-success">
+                        <i class="fas fa-bolt"></i> Quick HUUM Scrape (5 products)
+                    </a>
+                    <a href="{% url 'admin:products_scrape_all_brands' %}" class="action-btn btn-warning">
+                        <i class="fas fa-globe"></i> Scrape All Brands (3 each)
+                    </a>
+                    <a href="{% url 'admin:products_intelligent_scrape' %}" class="action-btn btn-info">
+                        <i class="fas fa-brain"></i> Intelligent Scraping (10 products)
+                    </a>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="action-category">
+                <h3>📊 Data Management</h3>
+                <div class="action-buttons">
+                    <a href="{% url 'admin:products_data_validation' %}" class="action-btn btn-primary">
+                        <i class="fas fa-check-circle"></i> Data Validation & Quality
+                    </a>
+                    <a href="{% url 'admin:products_clean_data' %}" class="action-btn btn-success">
+                        <i class="fas fa-broom"></i> Clean Product Data
+                    </a>
+                    <a href="{% url 'admin:products_export_csv' %}" class="action-btn btn-info">
+                        <i class="fas fa-download"></i> Export to CSV
+                    </a>
+                    <a href="{% url 'admin:products_clear_all' %}" class="action-btn btn-danger">
+                        <i class="fas fa-trash"></i> Clear All Products
+                    </a>
+                </div>
+            </div>
+
+            <!-- Hierarchy Management -->
+            <div class="action-category">
+                <h3>🏗️ Hierarchy Management</h3>
+                <div class="action-buttons">
+                    <a href="{% url 'admin:products_brand_hierarchy' %}" class="action-btn btn-primary">
+                        <i class="fas fa-sitemap"></i> Brand Hierarchy
+                    </a>
+                    <a href="{% url 'admin:products_category_view' %}" class="action-btn btn-info">
+                        <i class="fas fa-folder"></i> Category Management
+                    </a>
+                    <a href="{% url 'admin:products_collection_view' %}" class="action-btn btn-secondary">
+                        <i class="fas fa-layer-group"></i> Collection Management
+                    </a>
+                </div>
+            </div>
+
+            <!-- Product Management -->
+            <div class="action-category">
+                <h3>📦 Product Management</h3>
+                <div class="action-buttons">
+                    <a href="{% url 'admin:products_product_add' %}" class="action-btn btn-success">
+                        <i class="fas fa-plus"></i> Add New Product
+                    </a>
+                    <a href="{% url 'admin:products_product_changelist' %}" class="action-btn btn-primary">
+                        <i class="fas fa-list"></i> View All Products
+                    </a>
+                    <a href="/products/" target="_blank" class="action-btn btn-info">
+                        <i class="fas fa-external-link-alt"></i> View Frontend
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Management Commands -->
+    <div class="management-commands">
+        <h3>⚡ Management Commands Interface</h3>
+        <form method="post" action="{% url 'admin:products_run_command' %}" class="command-form">
+            {% csrf_token %}
+            <input type="text" name="command" placeholder="Enter management command (e.g., scrape_products_enhanced)" class="command-input">
+            <input type="text" name="args" placeholder="Arguments (optional)" class="command-input">
+            <button type="submit" class="command-btn">Run Command</button>
+        </form>
+        <div class="quick-commands">
+            <span class="quick-cmd" onclick="fillCommand('scrape_products_enhanced', '--limit 10')">Enhanced Scrape (10)</span>
+            <span class="quick-cmd" onclick="fillCommand('scrape_all_brands', '--limit-per-brand 5')">All Brands (5 each)</span>
+            <span class="quick-cmd" onclick="fillCommand('intelligent_scrape', '--brand HUUM')">HUUM Intelligent</span>
+            <span class="quick-cmd" onclick="fillCommand('clean_product_data', '')">Clean Data</span>
+            <span class="quick-cmd" onclick="fillCommand('export_products', '')">Export Products</span>
+            <span class="quick-cmd" onclick="fillCommand('scrape_products_improved', '--validate-only')">Validate Data</span>
+            <span class="quick-cmd" onclick="fillCommand('scrape_products_improved', '--test-mode')">Test Mode</span>
+            <span class="quick-cmd" onclick="fillCommand('populate_hierarchy', '')">Populate Hierarchy</span>
+            <span class="quick-cmd" onclick="fillCommand('delete_all_products', '')">Delete All</span>
+        </div>
+    </div>
+
+    <!-- Data Overview -->
+    <div class="data-overview">
+        <!-- Top Brands -->
+        <div class="overview-card">
+            <h3>🏢 Top Brands</h3>
+            <div class="brand-list">
+                {% for brand in top_brands %}
+                <div class="list-item">
+                    <span class="item-name">{{ brand.brand }}</span>
+                    <span class="item-count">{{ brand.product_count }}</span>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-muted);">No brands available</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Top Categories -->
+        <div class="overview-card">
+            <h3>📂 Top Categories</h3>
+            <div class="category-list">
+                {% for category in top_categories %}
+                <div class="list-item">
+                    <span class="item-name">{{ category.category }}</span>
+                    <span class="item-count">{{ category.product_count }}</span>
+                </div>
+                {% empty %}
+                <p style="color: var(--text-muted);">No categories available</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Products -->
+    <div class="recent-products">
+        <h3>🆕 Recent Products</h3>
+        {% for product in recent_products %}
+        <div class="product-item">
+            <div class="product-info">
+                <div class="product-title">{{ product.title }}</div>
+                <div class="product-meta">
+                    {{ product.brand }} • {{ product.category|default:"No category" }} • 
+                    ${{ product.price|default:"No price" }} • {{ product.created_at|date:"M d, Y" }}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p style="color: var(--text-muted);">No products available</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function fillCommand(command, args) {
+    document.querySelector('input[name="command"]').value = command;
+    document.querySelector('input[name="args"]').value = args;
+}
+</script>
+{% endblock %} 

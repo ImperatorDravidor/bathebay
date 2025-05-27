@@ -1,0 +1,48 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Export Product Data{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">📤 Export Product Data</h1>
+<p>Select a brand, category, or collection to export corresponding products as JSON or CSV.</p>
+
+<form method="post" class="card p-4" style="max-width:600px;">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label">Brand</label>
+        <select class="form-select" name="brand">
+            <option value="">All Brands</option>
+            {% for b in brands %}
+            <option value="{{ b }}">{{ b }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <select class="form-select" name="category">
+            <option value="">All Categories</option>
+            {% for c in categories %}
+            <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Collection</label>
+        <select class="form-select" name="collection">
+            <option value="">All Collections</option>
+            {% for s in collections %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Format</label>
+        <select class="form-select" name="format">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-success"><i class="fas fa-file-export me-1"></i>Export</button>
+</form>
+{% endblock %} 

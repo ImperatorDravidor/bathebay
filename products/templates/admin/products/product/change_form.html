@@ -1,0 +1,284 @@
+{% extends "admin/change_form.html" %}
+{% load admin_urls static admin_modify %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Enhanced Admin Styles */
+    .product-sidebar {
+        position: fixed;
+        top: 120px;
+        right: 20px;
+        width: 320px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        z-index: 1000;
+        max-height: calc(100vh - 140px);
+        overflow-y: auto;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .product-sidebar h3 {
+        margin-top: 0;
+        color: #495057;
+        border-bottom: 3px solid #007cba;
+        padding-bottom: 10px;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .sidebar-section {
+        margin-bottom: 25px;
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .sidebar-section h4 {
+        color: #6c757d;
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .sidebar-stat {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .sidebar-stat:last-child {
+        border-bottom: none;
+    }
+    
+    .stat-label {
+        font-size: 13px;
+        color: #6c757d;
+    }
+    
+    .stat-value {
+        font-weight: 600;
+        color: #495057;
+        background: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+    
+    .quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .quick-action-btn {
+        display: inline-block;
+        padding: 10px 15px;
+        background: linear-gradient(135deg, #007cba 0%, #0056b3 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .quick-action-btn:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,123,186,0.3);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .quick-action-btn.secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    }
+    
+    .quick-action-btn.secondary:hover {
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        box-shadow: 0 4px 12px rgba(108,117,125,0.3);
+    }
+    
+    .quick-action-btn.success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    }
+    
+    .quick-action-btn.success:hover {
+        background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+        box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+    }
+    
+    .hierarchy-breadcrumb {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 12px;
+        color: #856404;
+        margin-bottom: 15px;
+    }
+    
+    .hierarchy-breadcrumb .emoji {
+        margin-right: 5px;
+    }
+    
+    /* Main content adjustments */
+    .form-row {
+        margin-bottom: 20px;
+    }
+    
+    .form-row .field-box {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        border: 1px solid #e9ecef;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 1400px) {
+        .product-sidebar {
+            position: relative;
+            top: auto;
+            right: auto;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+    }
+    
+    /* Enhanced fieldset styling */
+    .module h2 {
+        background: linear-gradient(135deg, #007cba 0%, #0056b3 100%);
+        color: white;
+        padding: 12px 20px;
+        margin: 0;
+        border-radius: 8px 8px 0 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .module {
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+    
+    .module .form-row {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .module .form-row:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="product-sidebar">
+    <h3>🛍️ Product Tools</h3>
+    
+    {% if original %}
+    <div class="hierarchy-breadcrumb">
+        <span class="emoji">🏢</span>{{ original.brand|default:"No Brand" }} → 
+        <span class="emoji">📂</span>{{ original.category|default:"No Category" }} → 
+        <span class="emoji">📦</span>{{ original.subcategory|default:"No Collection" }}
+    </div>
+    
+    <div class="sidebar-section">
+        <h4>📊 Product Stats</h4>
+        <div class="sidebar-stat">
+            <span class="stat-label">Images</span>
+            <span class="stat-value">{{ original.images.count|default:0 }}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span class="stat-label">Specifications</span>
+            <span class="stat-value">{{ original.product_specifications.count|default:0 }}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span class="stat-label">Documents</span>
+            <span class="stat-value">{{ original.documents.count|default:0 }}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span class="stat-label">Related Products</span>
+            <span class="stat-value">{{ original.main_product_relations.count|default:0 }}</span>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="sidebar-section">
+        <h4>🚀 Quick Actions</h4>
+        <div class="quick-actions">
+            {% if original.source_url %}
+            <a href="{{ original.source_url }}" target="_blank" class="quick-action-btn">
+                🔗 View Original Product
+            </a>
+            {% endif %}
+            
+            {% if original %}
+            <a href="{% url 'admin:products_product_changelist' %}" class="quick-action-btn secondary">
+                📋 Back to Product List
+            </a>
+            
+            <a href="{% url 'admin:products_brand_hierarchy' %}" class="quick-action-btn secondary">
+                🏢 Brand Hierarchy
+            </a>
+            
+            <a href="{% url 'admin:products_scraping_control' %}" class="quick-action-btn success">
+                🚀 Scraping Control
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if original %}
+    <div class="sidebar-section">
+        <h4>🔗 Related Links</h4>
+        <div class="quick-actions">
+            <a href="{% url 'admin:products_productimage_changelist' %}?product__id__exact={{ original.pk }}" class="quick-action-btn secondary">
+                🖼️ Manage Images
+            </a>
+            <a href="{% url 'admin:products_productspecification_changelist' %}?product__id__exact={{ original.pk }}" class="quick-action-btn secondary">
+                📋 Manage Specs
+            </a>
+            <a href="{% url 'admin:products_productdocument_changelist' %}?product__id__exact={{ original.pk }}" class="quick-action-btn secondary">
+                📄 Manage Documents
+            </a>
+            <a href="{% url 'admin:products_relatedproduct_changelist' %}?main_product__id__exact={{ original.pk }}" class="quick-action-btn secondary">
+                🤝 Related Products
+            </a>
+        </div>
+    </div>
+    
+    <div class="sidebar-section">
+        <h4>📈 Team Access</h4>
+        <div class="sidebar-stat">
+            <span class="stat-label">Created</span>
+            <span class="stat-value">{{ original.created_at|date:"M d, Y" }}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span class="stat-label">Updated</span>
+            <span class="stat-value">{{ original.updated_at|date:"M d, Y" }}</span>
+        </div>
+        <div class="sidebar-stat">
+            <span class="stat-label">Status</span>
+            <span class="stat-value">{% if original.is_active %}Active{% else %}Inactive{% endif %}</span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{{ block.super }}
+{% endblock %} 

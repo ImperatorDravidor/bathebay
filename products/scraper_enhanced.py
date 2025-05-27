@@ -273,6 +273,7 @@ class EnhancedBathingBrandsScraper:
             soup = BeautifulSoup(response.content, 'html.parser')
             
             product_urls = []
+            brand_slug = brand_data['slug'].lower()
             
             # Look for product links - these typically have numeric IDs
             product_links = soup.find_all('a', href=True)
@@ -282,15 +283,22 @@ class EnhancedBathingBrandsScraper:
                 
                 # Product URLs typically contain numeric IDs: /12345/brand/product-name/
                 if re.match(r'/\d+/', href):
-                    product_url = urljoin(self.base_url, href)
-                    if product_url not in self.scraped_urls:
-                        product_urls.append(product_url)
+                    # CRITICAL FIX: Ensure the URL contains the correct brand
+                    if f'/{brand_slug}/' in href.lower():
+                        product_url = urljoin(self.base_url, href)
+                        if product_url not in self.scraped_urls:
+                            product_urls.append(product_url)
+                            logger.info(f"      ✓ Found {brand_data['name']} product: {href}")
+                    else:
+                        logger.warning(f"      ❌ Skipping non-{brand_data['name']} product: {href}")
                 
-                # Also look for direct product links
+                # Also look for direct product links with brand validation
                 elif '/products/' in href and href.count('/') >= 5:
-                    product_url = urljoin(self.base_url, href)
-                    if product_url not in self.scraped_urls:
-                        product_urls.append(product_url)
+                    if f'/{brand_slug}/' in href.lower():
+                        product_url = urljoin(self.base_url, href)
+                        if product_url not in self.scraped_urls:
+                            product_urls.append(product_url)
+                            logger.info(f"      ✓ Found {brand_data['name']} product: {href}")
             
             # Remove duplicates while preserving order
             unique_products = []
@@ -300,7 +308,7 @@ class EnhancedBathingBrandsScraper:
                     seen.add(url)
                     unique_products.append(url)
             
-            logger.info(f"🛍️ Found {len(unique_products)} products in {brand_data['name']} → {category_data['name']} → {collection_data['name']}")
+            logger.info(f"🛍️ Found {len(unique_products)} {brand_data['name']} products in {brand_data['name']} → {category_data['name']} → {collection_data['name']}")
             return unique_products
             
         except Exception as e:
@@ -487,8 +495,103 @@ class EnhancedBathingBrandsScraper:
             logger.error(f"❌ Error extracting documents: {e}")
             return []
     
+    def _extract_tab_content(self, soup, tab_name):
+        """Extract content from specific tabs like Description, Features, Includes, etc."""
+        content = ""
+        
+        # Method 1: Look for tab content by ID or class
+        tab_content = soup.find('div', {'id': re.compile(f'{tab_name.lower()}', re.I)})
+        if not tab_content:
+            tab_content = soup.find('div', {'class': re.compile(f'{tab_name.lower()}', re.I)})
+        
+        # Method 2: Look for tab panels
+        if not tab_content:
+            # Look for tab navigation first
+            tab_link = soup.find('a', text=re.compile(f'^{tab_name}$', re.I))
+            if tab_link:
+                # Get the href or data attribute that points to content
+                href = tab_link.get('href', '')
+                if href.startswith('#'):
+                    tab_content = soup.find('div', {'id': href[1:]})
+        
+        # Method 3: Look for content after tab headings
+        if not tab_content:
+            heading = soup.find(['h2', 'h3', 'h4', 'strong'], text=re.compile(f'^{tab_name}$', re.I))
+            if heading:
+                content_parts = []
+                for sibling in heading.find_next_siblings():
+                    if sibling.name in ['h2', 'h3', 'h4'] and sibling.get_text(strip=True).lower() != tab_name.lower():
+                        break
+                    if isinstance(sibling, Tag):
+                        # Clean up scripts and styles
+                        for s in sibling.find_all(['script', 'style']):
+                            s.decompose()
+                        
+                        text = sibling.get_text(separator=' ', strip=True)
+                        if text:
+                            content_parts.append(text)
+                
+                content = "\n".join(content_parts).strip()
+        
+        # Method 4: Extract from tab content div
+        if tab_content:
+            # Remove scripts and styles
+            for s in tab_content.find_all(['script', 'style']):
+                s.decompose()
+            
+            # Handle different content types
+            content_parts = []
+            
+            # Look for paragraphs
+            paragraphs = tab_content.find_all('p')
+            for p in paragraphs:
+                text = p.get_text(separator=' ', strip=True)
+                if text:
+                    content_parts.append(text)
+            
+            # Look for lists
+            lists = tab_content.find_all(['ul', 'ol'])
+            for ul in lists:
+                list_items = []
+                for li in ul.find_all('li'):
+                    item_text = li.get_text(separator=' ', strip=True)
+                    if item_text:
+                        list_items.append(f"• {item_text}")
+                if list_items:
+                    content_parts.append("\n".join(list_items))
+            
+            # Look for tables
+            tables = tab_content.find_all('table')
+            for table in tables:
+                table_text = []
+                for row in table.find_all('tr'):
+                    cells = [cell.get_text(strip=True) for cell in row.find_all(['td', 'th'])]
+                    if any(cells):  # Only add non-empty rows
+                        table_text.append(" | ".join(cells))
+                if table_text:
+                    content_parts.append("\n".join(table_text))
+            
+            # If no structured content found, get all text
+            if not content_parts:
+                content = tab_content.get_text(separator=' ', strip=True)
+            else:
+                content = "\n\n".join(content_parts)
+        
+        # Clean up and limit length
+        if content:
+            content = re.sub(r'\s+', ' ', content).strip()
+            return content[:3000] if len(content) > 3000 else content
+        
+        return ""
+
     def _extract_content_by_heading(self, soup, heading_text):
         """Extracts content under a specific heading (h2, h3, h4)."""
+        # First try the tab extraction method
+        tab_content = self._extract_tab_content(soup, heading_text)
+        if tab_content:
+            return tab_content
+        
+        # Fallback to original method
         heading = soup.find(['h2', 'h3', 'h4', 'strong'], text=re.compile(r'\b' + re.escape(heading_text) + r'\b', re.I))
         if not heading:
             return ""
@@ -496,23 +599,20 @@ class EnhancedBathingBrandsScraper:
         content_parts = []
         for sibling in heading.find_next_siblings():
             if sibling.name in ['h2', 'h3', 'h4'] and sibling.get_text(strip=True).lower() != heading_text.lower():
-                # Stop if we hit another heading of the same or higher level, unless it's a sub-heading of current section
                 break
             if isinstance(sibling, Tag):
-                # Try to get clean text, avoiding script/style and excessive whitespace
                 for s in sibling.find_all(['script', 'style']):
                     s.decompose()
                 
-                # Handle lists specifically
                 if sibling.name == 'ul':
                     list_items = []
                     for li in sibling.find_all('li'):
                         item_text = li.get_text(separator=' ', strip=True)
                         if item_text:
-                            list_items.append(f"- {item_text}")
+                            list_items.append(f"• {item_text}")
                     if list_items:
                          content_parts.append("\n".join(list_items))
-                elif sibling.name == 'table': # Basic table to text
+                elif sibling.name == 'table':
                     table_str = ""
                     for row in sibling.find_all('tr'):
                         cells = [cell.get_text(strip=True) for cell in row.find_all(['td', 'th'])]
@@ -521,12 +621,11 @@ class EnhancedBathingBrandsScraper:
                         content_parts.append(table_str)
                 else:
                     text = sibling.get_text(separator=' ', strip=True)
-                    if text: # Only add if there's actual text
+                    if text:
                         content_parts.append(text)
         
         full_content = "\n".join(content_parts).strip()
-        # Limit length to avoid overly long text fields
-        return full_content[:2000] if len(full_content) > 2000 else full_content
+        return full_content[:3000] if len(full_content) > 3000 else full_content
 
     def _extract_model_name(self, soup):
         """Extracts the product's model name."""
@@ -940,18 +1039,25 @@ class EnhancedBathingBrandsScraper:
             soup = BeautifulSoup(response.content, 'html.parser')
             
             title = self._extract_title(soup)
-            brand = self._extract_brand(soup, product_url) # Brand from URL/breadcrumbs can be refined by known_brands list
+            brand = self._extract_brand(soup, product_url)
             
-            # Refine brand using known_brands list
-            if brand and brand != "Unknown Brand":
+            # CRITICAL FIX: Validate brand matches URL
+            url_brand = None
+            for known_brand in self.known_brands:
+                if f'/{known_brand.lower().replace(" ", "-").replace(".", "")}/' in product_url.lower():
+                    url_brand = known_brand
+                    break
+            
+            if url_brand:
+                brand = url_brand
+                logger.info(f"    ✓ Confirmed brand from URL: {brand}")
+            else:
+                logger.warning(f"    ⚠️ Could not confirm brand from URL: {product_url}")
+                # Try to extract from title as fallback
                 for known_brand in self.known_brands:
-                    if known_brand.lower() in brand.lower():
-                        brand = known_brand
-                        break
-            elif title: # Try to get brand from title if not found elsewhere
-                 for known_brand in self.known_brands:
                     if known_brand.lower() in title.lower():
                         brand = known_brand
+                        logger.info(f"    ✓ Found brand in title: {brand}")
                         break
 
 
@@ -959,14 +1065,43 @@ class EnhancedBathingBrandsScraper:
             sku = self._extract_sku(soup, product_url)
             model_name = self._extract_model_name(soup)
             
-            # Descriptions and other text fields
-            short_description = self._extract_short_description(soup) # Existing logic
-            full_description = self._extract_content_by_heading(soup, "Description") or self._extract_full_description(soup) # Prioritize heading
+            # Extract content from tabs and sections
+            short_description = self._extract_short_description(soup)
             
-            features = self._extract_content_by_heading(soup, "Features")
-            includes = self._extract_content_by_heading(soup, "Includes")
-            technical_info = self._extract_content_by_heading(soup, "Technical")
-            inspiration_content = self._extract_content_by_heading(soup, "Inspiration")
+            # Extract from specific tabs
+            full_description = (
+                self._extract_tab_content(soup, "Description") or 
+                self._extract_content_by_heading(soup, "Description") or 
+                self._extract_full_description(soup)
+            )
+            
+            features = (
+                self._extract_tab_content(soup, "Features") or
+                self._extract_content_by_heading(soup, "Features")
+            )
+            
+            includes = (
+                self._extract_tab_content(soup, "Includes") or
+                self._extract_content_by_heading(soup, "Includes")
+            )
+            
+            technical_info = (
+                self._extract_tab_content(soup, "Technical") or
+                self._extract_tab_content(soup, "Specifications") or
+                self._extract_content_by_heading(soup, "Technical") or
+                self._extract_content_by_heading(soup, "Specifications")
+            )
+            
+            # Additional content extraction
+            shipping_info = (
+                self._extract_tab_content(soup, "Shipping") or
+                self._extract_content_by_heading(soup, "Shipping")
+            )
+            
+            inspiration_content = (
+                self._extract_tab_content(soup, "Inspiration") or
+                self._extract_content_by_heading(soup, "Inspiration")
+            )
             
             # If full_description is still empty, use short_description or a generic part of the page
             if not full_description and short_description:
@@ -1018,12 +1153,13 @@ class EnhancedBathingBrandsScraper:
                 'category': category,
                 'subcategory': subcategory,
                 'source_url': product_url,
-                'images': images, # List of dicts
-                'specifications_dict': specifications_dict, # Dict
-                'documents': documents, # List of dicts
+                'images': images,
+                'specifications_dict': specifications_dict,
+                'documents': documents,
                 'features': features,
                 'includes': includes,
                 'technical_info': technical_info,
+                'shipping_info': shipping_info,
                 'inspiration_content': inspiration_content,
                 # Related products will be handled after product is saved
             }
@@ -1164,11 +1300,14 @@ class EnhancedBathingBrandsScraper:
             next_elem = sku_label.find_next_sibling(text=True)
             if next_elem and next_elem.strip():
                 sku_val = next_elem.strip()
-                if self.validator.validate_sku(sku_val): return sku_val
+                if self.validator.validate_sku(sku_val): 
+                    logger.info(f"    Found SKU via label: {sku_val}")
+                    return sku_val
             # Check parent's text if label is inside something
             parent_text = sku_label.parent.get_text(separator=' ', strip=True)
             match = re.search(r'SKU[:\s]*([A-Za-z0-9\-_]+)', parent_text, re.I)
             if match and self.validator.validate_sku(match.group(1).strip()):
+                logger.info(f"    Found SKU via parent text: {match.group(1).strip()}")
                 return match.group(1).strip()
 
         # Method 2: Look for "Model" label as a fallback for SKU
@@ -1177,14 +1316,16 @@ class EnhancedBathingBrandsScraper:
             next_elem = model_label.find_next_sibling(text=True)
             if next_elem and next_elem.strip():
                 model_val = next_elem.strip()
-                if self.validator.validate_sku(model_val) and model_val.lower() != 'model': return model_val
+                if self.validator.validate_sku(model_val) and model_val.lower() != 'model': 
+                    logger.info(f"    Found SKU via model label: {model_val}")
+                    return model_val
             parent_text = model_label.parent.get_text(separator=' ', strip=True)
             match = re.search(r'Model[:\s]*([A-Za-z0-9\-_\s]+)', parent_text, re.I)
             if match:
                 model_as_sku = match.group(1).strip()
                 if self.validator.validate_sku(model_as_sku) and model_as_sku.lower() != 'model' and len(model_as_sku) < 50:
-                     return model_as_sku
-
+                    logger.info(f"    Found SKU via model parent: {model_as_sku}")
+                    return model_as_sku
 
         # Method 3: Common class/id attributes
         sku_elem = soup.find(['span', 'div'], {'class': re.compile(r'sku|product-sku|model-number|product-id', re.I), 'id': re.compile(r'sku|model', re.I)})
@@ -1193,45 +1334,108 @@ class EnhancedBathingBrandsScraper:
             # Sometimes this contains "SKU: value", so extract value
             if ":" in sku: sku = sku.split(":")[-1].strip()
             if self.validator.validate_sku(sku):
+                logger.info(f"    Found SKU via class/id: {sku}")
                 return sku
         
-        # Method 4: Text pattern matching in the whole page (less reliable)
+        # Method 4: Enhanced text pattern matching with better patterns
         text_content = soup.get_text()
         sku_patterns = [
-            r'SKU[:\s]*([A-Z0-9\-_]+)',
-            r'Model No[:.\s]*([A-Z0-9\-_]+)', # Added Model No.
-            r'Item No[:.\s]*([A-Z0-9\-_]+)',  # Added Item No.
+            r'SKU[:\s]*([H][A-Z0-9\-_]+)',  # HUUM SKUs start with H
+            r'Model[:\s]*([H][A-Z0-9\-_]+)', # HUUM Models start with H
+            r'SKU[:\s]*([A-Z0-9\-_]{6,})',   # General SKUs 6+ chars
+            r'Model No[:.\s]*([A-Z0-9\-_]+)',
+            r'Item No[:.\s]*([A-Z0-9\-_]+)',
         ]
         for pattern in sku_patterns:
-            match = re.search(pattern, text_content) # Removed re.IGNORECASE for SKU patterns to be more precise
+            match = re.search(pattern, text_content, re.IGNORECASE)
             if match:
                 sku = match.group(1).strip()
                 if self.validator.validate_sku(sku):
+                    logger.info(f"    Found SKU via text pattern: {sku}")
                     return sku
         
-        # Method 5: From URL (last resort, often not a real SKU)
-        # url_parts = product_url.split('/')
-        # if url_parts:
-        #     potential_sku = url_parts[-1].replace('.html', '').replace('-', '_').upper()
-        #     if self.validator.validate_sku(potential_sku) and not any(kw in potential_sku.lower() for kw in ['product', 'detail']):
-        #         return potential_sku
+        # Method 5: Extract from URL path for HUUM products
+        if '/huum/' in product_url.lower():
+            # For HUUM, try to extract from URL structure
+            url_parts = product_url.split('/')
+            if len(url_parts) >= 2:
+                # Look for numeric ID in URL
+                for part in url_parts:
+                    if part.isdigit() and len(part) >= 5:
+                        # Generate HUUM-style SKU from URL ID
+                        potential_sku = f"H{part}"
+                        if self.validator.validate_sku(potential_sku):
+                            logger.info(f"    Generated SKU from URL: {potential_sku}")
+                            return potential_sku
         
-        logger.debug(f"Could not find explicit SKU for {product_url}. Model name might be used as SKU if valid.")
-        return None # Return None if no SKU found, will be handled in extract_product_data
+        logger.warning(f"Could not find valid SKU for {product_url}")
+        return None
     
     def _extract_short_description(self, soup):
-        """Extract short product description"""
-        # Look for short description elements
+        """Extract short product description - the content that appears under the price"""
+        # Method 1: Look for the specific product description section under price
+        # This is typically in a div with product details or description class
+        product_desc_selectors = [
+            'div.product-description',
+            'div.product-details', 
+            'div.product-summary',
+            'div.product-info',
+            '.product-description',
+            '.product-details',
+            '.product-summary'
+        ]
+        
+        for selector in product_desc_selectors:
+            desc_elem = soup.select_one(selector)
+            if desc_elem:
+                # Clean up the text
+                for script in desc_elem.find_all(['script', 'style']):
+                    script.decompose()
+                
+                text = desc_elem.get_text(separator=' ', strip=True)
+                if text and len(text) > 20:
+                    return text[:1000]  # Increased limit for better content
+        
+        # Method 2: Look for content immediately after price section
+        price_elem = soup.find(text=re.compile(r'\$\d+', re.I))
+        if price_elem and hasattr(price_elem, 'parent'):
+            price_container = price_elem.parent
+            # Look for next significant content after price
+            for sibling in price_container.find_next_siblings():
+                if sibling.name in ['p', 'div'] and len(sibling.get_text(strip=True)) > 50:
+                    text = sibling.get_text(strip=True)
+                    if not any(skip_word in text.lower() for skip_word in ['add to cart', 'quantity', 'sku:', 'model:']):
+                        return text[:1000]
+        
+        # Method 3: Look for the main product content area
+        main_content_selectors = [
+            'div.col-sm-12',
+            'div.product-content',
+            'div.main-content',
+            'section.product-info'
+        ]
+        
+        for selector in main_content_selectors:
+            content_elem = soup.select_one(selector)
+            if content_elem:
+                # Look for the first substantial paragraph
+                paragraphs = content_elem.find_all('p')
+                for p in paragraphs:
+                    text = p.get_text(strip=True)
+                    if len(text) > 50 and not any(skip_word in text.lower() for skip_word in ['sku:', 'model:', 'price:']):
+                        return text[:1000]
+        
+        # Method 4: Look for short description elements
         short_desc_elem = soup.find(['p', 'div'], {'class': re.compile(r'short.*desc|summary', re.I)})
         if short_desc_elem:
-            return short_desc_elem.get_text(strip=True)
+            return short_desc_elem.get_text(strip=True)[:1000]
         
-        # Fallback: First paragraph
-        first_p = soup.find('p')
-        if first_p:
-            text = first_p.get_text(strip=True)
-            if len(text) > 20:
-                return text[:500]  # Limit to 500 chars
+        # Method 5: Fallback - First meaningful paragraph
+        paragraphs = soup.find_all('p')
+        for p in paragraphs:
+            text = p.get_text(strip=True)
+            if len(text) > 50 and not any(skip_word in text.lower() for skip_word in ['sku:', 'model:', 'price:', 'add to cart']):
+                return text[:1000]
         
         return ""
     
@@ -1301,6 +1505,7 @@ class EnhancedBathingBrandsScraper:
                     'features': product_data.get('features', ''),
                     'includes': product_data.get('includes', ''),
                     'technical_info': product_data.get('technical_info', ''),
+                    'shipping_info': product_data.get('shipping_info', ''),
                     'inspiration_content': product_data.get('inspiration_content', ''),
                     # 'specifications' field (JSON text) is not directly populated here
                     # It could be if extract_specifications returned JSON string

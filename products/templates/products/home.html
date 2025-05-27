@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load brand_extras %}
+
+{% block title %}Product Catalog - Premium Sauna & Steam Products{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 80px 0;
+    margin-bottom: 0;
+}
+
+.stats-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.product-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.product-image {
+    height: 200px;
+    object-fit: cover;
+}
+
+.brand-badge {
+    background: #007cba;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.price {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #28a745;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #666;
+}
+
+.empty-state h3 {
+    color: #007cba;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 576px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">Premium Sauna & Steam Products</h1>
+                <p class="lead mb-4">Discover the finest collection of sauna heaters, steam generators, and wellness products from top brands worldwide.</p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'products:product_list' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-shopping-bag me-2"></i>Shop Now
+                    </a>
+                    {% if brands %}
+                    <a href="{% url 'products:product_list' %}?brand={{ brands.0.brand }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-fire me-2"></i>View {{ brands.0.brand }}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="stats-card">
+                            <h3 class="text-primary">{{ total_products }}+</h3>
+                            <p class="mb-0">Products</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stats-card">
+                            <h3 class="text-primary">{{ brands|length }}+</h3>
+                            <p class="mb-0">Brands</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stats-card">
+                            <h3 class="text-primary">{{ categories|length }}+</h3>
+                            <p class="mb-0">Categories</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stats-card">
+                            <h3 class="text-primary">100%</h3>
+                            <p class="mb-0">Quality</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if total_products > 0 %}
+<!-- Featured Products -->
+<section class="py-5">
+    <div class="container">
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="display-5 fw-bold mb-3">Featured Products</h2>
+                <p class="lead text-muted">Discover our latest and most popular sauna and steam products</p>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in featured_products %}
+            <div class="col-lg-3 col-md-6">
+                <div class="card product-card h-100">
+                    {% if product.images.first %}
+                        <img src="{{ product.images.first.image_url }}" 
+                             class="card-img-top product-image" 
+                             alt="{{ product.title }}"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                    {% else %}
+                        <div class="card-img-top product-image bg-light d-flex align-items-center justify-content-center">
+                            <i class="fas fa-hot-tub fa-3x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body d-flex flex-column">
+                        <div class="mb-2">
+                            <span class="brand-badge">{{ product.brand }}</span>
+                        </div>
+                        <h5 class="card-title">{{ product.title|truncatechars:50 }}</h5>
+                        <p class="card-text text-muted flex-grow-1">{{ product.short_description|truncatechars:100 }}</p>
+                        
+                        <div class="mt-auto">
+                            {% if product.price %}
+                                <div class="price mb-3">${{ product.price|floatformat:0 }}</div>
+                            {% endif %}
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'products:product_detail' product.slug %}" class="btn btn-primary flex-grow-1">
+                                    <i class="fas fa-eye me-1"></i>View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="{% url 'products:product_list' %}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-th-large me-2"></i>View All Products
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Brands Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="display-5 fw-bold mb-3">Our Brands</h2>
+                <p class="lead text-muted">Explore products from the world's leading sauna and steam brands</p>
+            </div>
+        </div>
+        
+        <div class="row g-3 justify-content-center">
+            {% for brand in brands %}
+            {% brand_card brand show_logo=True show_stats=True %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% else %}
+<!-- Empty State -->
+<section class="py-5">
+    <div class="container">
+        <div class="empty-state">
+            <h3>No Products Available</h3>
+            <p>Our catalog is currently being updated. Please check back soon!</p>
+            <a href="{% url 'admin:index' %}" class="btn btn-primary">
+                <i class="fas fa-user-shield me-2"></i>Admin Panel
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Call to Action -->
+<section class="py-5 bg-primary text-white">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h3 class="mb-2">Ready to Transform Your Wellness Experience?</h3>
+                <p class="mb-0">Explore our comprehensive collection of premium sauna and steam products.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <a href="{% url 'products:product_list' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-shopping-cart me-2"></i>Start Shopping
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %} 

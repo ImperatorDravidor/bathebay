@@ -29,6 +29,7 @@ class Product(models.Model):
     technical_info = models.TextField(blank=True, help_text='Technical details and requirements')
     important_details = models.TextField(blank=True, help_text="Important details like 'sold separately' items")
     includes = models.TextField(blank=True, help_text="What's included in the box")
+    shipping_info = models.TextField(blank=True, help_text='Shipping information and requirements')
     inspiration_content = models.TextField(blank=True, help_text='Inspiration content and links')
     
     # Physical attributes

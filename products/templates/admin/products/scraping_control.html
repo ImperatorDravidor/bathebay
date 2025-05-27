@@ -1,446 +1,412 @@
 {% extends "admin/base_site.html" %}
-{% load admin_urls static admin_list %}
+{% load admin_urls static %}
 
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block extrahead %}
 {{ block.super }}
 <style>
-.scraping-section {
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+:root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #34495e;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --info-color: #3498db;
+    --light-bg: #f8f9fa;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --border-radius: 8px;
+    --gradient-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --text-dark: #2c3e50;
+    --text-light: #ffffff;
+    --text-muted: #6c757d;
+}
+
+.scraping-container {
     padding: 20px;
-    margin: 20px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: var(--gradient-bg);
+    min-height: 100vh;
 }
-.scraping-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 20px;
-    margin: 20px 0;
+
+.scraping-header {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: var(--border-radius);
+    margin-bottom: 30px;
+    box-shadow: var(--card-shadow);
+    text-align: center;
 }
+
+.scraping-header h1 {
+    color: var(--primary-color);
+    margin: 0 0 10px 0;
+    font-size: 2.5rem;
+    font-weight: 300;
+}
+
+.scraping-header p {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.scraping-form {
+    background: white;
+    padding: 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 30px;
+}
+
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
+
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-dark);
 }
+
 .form-group input, .form-group select {
     width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
     font-size: 14px;
+    transition: border-color 0.3s ease;
+    color: var(--text-dark);
+    background: white;
 }
+
+.form-group input:focus, .form-group select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.form-group small {
+    color: var(--text-muted);
+}
+
 .btn {
-    display: inline-block;
-    padding: 10px 20px;
-    margin: 5px;
+    padding: 12px 24px;
     border: none;
-    border-radius: 4px;
-    text-decoration: none;
-    font-size: 14px;
+    border-radius: 6px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s;
-}
-.btn-success {
-    background: #28a745;
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 10px;
+    transition: all 0.3s ease;
     color: white;
 }
-.btn-success:hover {
-    background: #1e7e34;
+
+.btn-primary { 
+    background: var(--primary-color); 
+    color: white; 
 }
-.btn-primary {
-    background: #007cba;
-    color: white;
+
+.btn-secondary { 
+    background: var(--secondary-color); 
+    color: white; 
 }
-.btn-primary:hover {
-    background: #005a87;
+
+.btn-success { 
+    background: var(--success-color); 
+    color: white; 
 }
+
 .btn-warning {
-    background: #ffc107;
-    color: #212529;
-}
-.btn-warning:hover {
-    background: #e0a800;
-}
-.btn-secondary {
-    background: #6c757d;
+    background: var(--warning-color);
     color: white;
 }
-.btn-secondary:hover {
-    background: #545b62;
+
+.btn-info {
+    background: var(--info-color);
+    color: white;
 }
-.status-message {
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
-    display: none;
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    color: white;
+    text-decoration: none;
 }
-.status-success {
-    background: #d4edda;
-    border: 1px solid #c3e6cb;
-    color: #155724;
-}
-.status-error {
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
-}
-.brand-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 10px;
-    margin: 15px 0;
-}
-.brand-item {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 8px 12px;
-    border-radius: 4px;
-    text-align: center;
-    font-size: 0.9em;
-}
-.scraped-brand {
-    background: #c8e6c9;
-    color: #2e7d32;
-}
-.loading {
-    display: none;
-    text-align: center;
+
+.info-box {
+    background: rgba(52, 152, 219, 0.1);
+    border: 1px solid var(--info-color);
+    border-radius: 6px;
     padding: 20px;
+    margin: 20px 0;
+    color: var(--text-dark);
 }
-.spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid #007cba;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 10px;
+
+.back-button {
+    background: white;
+    padding: 15px 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 20px;
+    text-align: center;
 }
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+
+.back-button a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+.back-button a:hover {
+    text-decoration: underline;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.quick-action-card {
+    background: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-3px);
+}
+
+.quick-action-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.quick-action-card p {
+    color: var(--text-dark);
+    margin-bottom: 15px;
+}
+
+.tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .scraping-container {
+        padding: 10px;
+    }
+    
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tips-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="content-main">
-    <h1>{{ title }}</h1>
-    
-    <!-- Status Messages -->
-    <div id="status-message" class="status-message"></div>
-    
-    <!-- Loading Indicator -->
-    <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <p>Scraping in progress... This may take a few minutes.</p>
+<div class="scraping-container">
+    <!-- Back Button -->
+    <div class="back-button">
+        <a href="{% url 'admin:products_dashboard' %}">← Back to Dashboard</a>
     </div>
 
-    <!-- Available Brands Overview -->
-    <div class="scraping-section">
-        <h3>🏢 Available Brands</h3>
-        <p>These brands are available for scraping from bathingbrands.com:</p>
-        
-        <div class="brand-list">
-            {% for brand in known_brands %}
-                {% if brand in scraped_brands %}
-                    <div class="brand-item scraped-brand">✅ {{ brand }}</div>
-                {% else %}
-                    <div class="brand-item">{{ brand }}</div>
-                {% endif %}
-            {% endfor %}
-        </div>
-        
-        <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
-            ✅ Green brands have products in the database • Regular brands are available for scraping
-        </p>
+    <!-- Header -->
+    <div class="scraping-header">
+        <h1>🚀 Advanced Scraping Control Center</h1>
+        <p>Comprehensive scraping tools for automated product data collection and management</p>
     </div>
-
-    <!-- Scraping Controls -->
-    <div class="scraping-grid">
-        <!-- Brand Scraping -->
-        <div class="scraping-section">
-            <h3>🏢 Scrape by Brand</h3>
-            <p>Scrape all products from a specific brand</p>
-            
-            <form id="brand-scrape-form">
-                <div class="form-group">
-                    <label for="brand-select">Select Brand:</label>
-                    <select id="brand-select" name="brand" required>
-                        <option value="">Choose a brand...</option>
-                        {% for brand in known_brands %}
-                            <option value="{{ brand }}">{{ brand }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="brand-limit">Product Limit:</label>
-                    <input type="number" id="brand-limit" name="limit" value="10" min="1" max="100">
-                    <small style="color: #666;">Maximum number of products to scrape</small>
-                </div>
-                
-                <button type="submit" class="btn btn-success">🚀 Scrape Brand</button>
-            </form>
+    
+    <!-- Main Scraping Form -->
+    <div class="scraping-form">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">🔧 Advanced Scraping Configuration</h2>
+        
+        <div class="info-box">
+            <strong>ℹ️ Information:</strong>
+            <p>Use this interface to control the product scraping process. You can scrape specific brands, categories, or run comprehensive scraping operations with advanced options. All operations use the production-ready management commands.</p>
         </div>
-
-        <!-- Category Scraping -->
-        <div class="scraping-section">
-            <h3>📂 Scrape by Category</h3>
-            <p>Scrape products from a specific brand and category</p>
+        
+        <form method="post">
+            {% csrf_token %}
             
-            <form id="category-scrape-form">
-                <div class="form-group">
-                    <label for="category-brand-select">Select Brand:</label>
-                    <select id="category-brand-select" name="brand" required>
-                        <option value="">Choose a brand...</option>
-                        {% for brand in known_brands %}
-                            <option value="{{ brand }}">{{ brand }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="category-input">Category Name:</label>
-                    <input type="text" id="category-input" name="category" placeholder="e.g., Electric Heaters, Controls" required>
-                    <small style="color: #666;">Enter the category name as it appears on the website</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="category-limit">Product Limit:</label>
-                    <input type="number" id="category-limit" name="limit" value="5" min="1" max="50">
-                </div>
-                
-                <button type="submit" class="btn btn-primary">📂 Scrape Category</button>
-            </form>
-        </div>
-
-        <!-- Single Product Scraping -->
-        <div class="scraping-section">
-            <h3>🛍️ Scrape Single Product</h3>
-            <p>Scrape a specific product by URL</p>
-            
-            <form id="product-scrape-form">
-                <div class="form-group">
-                    <label for="product-url">Product URL:</label>
-                    <input type="url" id="product-url" name="url" placeholder="https://www.bathingbrands.com/..." required>
-                    <small style="color: #666;">Full URL to the product page</small>
-                </div>
-                
-                <button type="submit" class="btn btn-warning">🛍️ Scrape Product</button>
-            </form>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="scraping-section">
-            <h3>⚡ Quick Actions</h3>
-            <p>Common scraping operations</p>
-            
-            <div style="margin: 15px 0;">
-                <button onclick="scrapePopularBrands()" class="btn btn-success">
-                    🔥 Scrape Popular Brands (HUUM, Harvia, Mr.Steam)
-                </button>
+            <div class="form-group">
+                <label for="action">Scraping Strategy:</label>
+                <select name="action" id="action" required>
+                    <option value="">Select a scraping strategy...</option>
+                    <option value="scrape_huum">🔥 HUUM Products (Optimized & Fast)</option>
+                    <option value="scrape_all_brands">🌐 All Brands (Comprehensive)</option>
+                    <option value="intelligent_scrape">🧠 Intelligent Scraping (AI-Powered)</option>
+                </select>
             </div>
             
-            <div style="margin: 15px 0;">
-                <button onclick="scrapeAllBrands()" class="btn btn-primary">
-                    🌟 Scrape All Brands (Limited)
-                </button>
+            <div class="form-group">
+                <label for="limit">Product Limit:</label>
+                <input type="number" name="limit" id="limit" value="10" min="1" max="1000">
+                <small>Maximum number of products to scrape (1-1000). Start with smaller numbers for testing.</small>
             </div>
             
-            <div style="margin: 15px 0;">
-                <a href="{% url 'admin:products_brand_hierarchy' %}" class="btn btn-secondary">
-                    📊 View Hierarchy Dashboard
+            <div class="form-group">
+                <label for="brand">Specific Brand (Optional):</label>
+                <select name="brand" id="brand">
+                    <option value="">All Brands</option>
+                    <option value="HUUM">HUUM</option>
+                    <option value="Harvia">Harvia</option>
+                    <option value="Finnmark">Finnmark</option>
+                    <option value="Auroom">Auroom</option>
+                    <option value="Saunum">Saunum</option>
+                    <option value="Amerec">Amerec</option>
+                    <option value="Mr.Steam">Mr.Steam</option>
+                    <option value="Steamist">Steamist</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="limit_per_brand">Limit Per Brand (for All Brands scraping):</label>
+                <input type="number" name="limit_per_brand" id="limit_per_brand" value="5" min="1" max="100">
+                <small>When scraping all brands, limit products per brand (1-100).</small>
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">🚀 Start Advanced Scraping</button>
+                <a href="{% url 'admin:products_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+                <a href="{% url 'admin:products_data_validation' %}" class="btn btn-success">📊 Data Validation</a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="scraping-form">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">⚡ Quick Actions</h2>
+        
+        <div class="quick-actions-grid">
+            <div class="quick-action-card">
+                <div style="font-size: 2rem; margin-bottom: 15px;">🔥</div>
+                <h3>Quick HUUM Scrape</h3>
+                <p>Fast scraping of 5 HUUM products for immediate results</p>
+                <a href="{% url 'admin:products_scrape_huum' %}" class="btn btn-success">
+                    Start Quick Scrape
                 </a>
+            </div>
+            
+            <div class="quick-action-card">
+                <div style="font-size: 2rem; margin-bottom: 15px;">🌐</div>
+                <h3>All Brands Scrape</h3>
+                <p>Comprehensive scraping across all available brands</p>
+                <a href="{% url 'admin:products_scrape_all_brands' %}" class="btn btn-warning">
+                    Start All Brands
+                </a>
+            </div>
+            
+            <div class="quick-action-card">
+                <div style="font-size: 2rem; margin-bottom: 15px;">🧠</div>
+                <h3>Intelligent Scrape</h3>
+                <p>AI-powered scraping with smart product selection</p>
+                <a href="{% url 'admin:products_intelligent_scrape' %}" class="btn btn-info">
+                    Start Intelligent
+                </a>
+            </div>
+
+            <div class="quick-action-card">
+                <div style="font-size: 2rem; margin-bottom: 15px;">🧪</div>
+                <h3>Enhanced Scraper</h3>
+                <p>Test the enhanced scraper with full data extraction</p>
+                <form method="post" action="{% url 'admin:products_run_command' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="command" value="scrape_products_enhanced">
+                    <input type="hidden" name="args" value="--limit 5">
+                    <button type="submit" class="btn btn-primary">
+                        Test Enhanced
+                    </button>
+                </form>
+            </div>
+
+            <div class="quick-action-card">
+                <div style="font-size: 2rem; margin-bottom: 15px;">📊</div>
+                <h3>Validation Mode</h3>
+                <p>Run scraper in validation-only mode to check data quality</p>
+                <form method="post" action="{% url 'admin:products_run_command' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="command" value="scrape_products_improved">
+                    <input type="hidden" name="args" value="--validate-only">
+                    <button type="submit" class="btn btn-info">
+                        Validate Only
+                    </button>
+                </form>
+            </div>
+
+            <div class="quick-action-card">
+                <div style="font-size: 2rem; margin-bottom: 15px;">🔍</div>
+                <h3>Test Mode</h3>
+                <p>Run comprehensive tests of the scraping system</p>
+                <form method="post" action="{% url 'admin:products_run_command' %}" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="command" value="scrape_products_improved">
+                    <input type="hidden" name="args" value="--test-mode">
+                    <button type="submit" class="btn btn-warning">
+                        Run Tests
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tips and Information -->
+    <div class="scraping-form">
+        <h2 style="color: var(--primary-color); margin-bottom: 20px;">💡 Scraping Tips & Best Practices</h2>
+        
+        <div class="tips-grid">
+            <div class="info-box">
+                <strong>🎯 Getting Started:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Start with Quick HUUM Scrape for fastest results</li>
+                    <li>Use small limits (5-10 products) for initial testing</li>
+                    <li>Monitor admin messages for real-time progress updates</li>
+                    <li>Check data validation after each scraping session</li>
+                </ul>
+            </div>
+            
+            <div class="info-box">
+                <strong>⚡ Performance Optimization:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>HUUM scraping is optimized and fastest (5-10 seconds)</li>
+                    <li>All brands scraping may take 10-30 minutes</li>
+                    <li>Intelligent scraping balances speed and quality</li>
+                    <li>Enhanced scraper captures maximum data per product</li>
+                </ul>
+            </div>
+            
+            <div class="info-box">
+                <strong>🛡️ Data Quality & Safety:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Always run validation after scraping operations</li>
+                    <li>Use test mode to verify scraper functionality</li>
+                    <li>Export data for backup before large operations</li>
+                    <li>Monitor data quality scores in the dashboard</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <strong>🔧 Available Management Commands:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li><code>scrape_huum</code> - HUUM brand optimization</li>
+                    <li><code>scrape_all_brands</code> - Comprehensive scraping</li>
+                    <li><code>intelligent_scrape</code> - AI-powered selection</li>
+                    <li><code>scrape_products_enhanced</code> - Maximum data extraction</li>
+                    <li><code>clean_product_data</code> - Data cleaning and normalization</li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-// CSRF token for Django
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-const csrftoken = getCookie('csrftoken');
-
-function showStatus(message, isError = false) {
-    const statusDiv = document.getElementById('status-message');
-    statusDiv.textContent = message;
-    statusDiv.className = 'status-message ' + (isError ? 'status-error' : 'status-success');
-    statusDiv.style.display = 'block';
-    
-    setTimeout(() => {
-        statusDiv.style.display = 'none';
-    }, 5000);
-}
-
-function showLoading(show = true) {
-    document.getElementById('loading').style.display = show ? 'block' : 'none';
-}
-
-// Brand scraping form
-document.getElementById('brand-scrape-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('action', 'scrape_brand');
-    formData.append('brand', document.getElementById('brand-select').value);
-    formData.append('limit', document.getElementById('brand-limit').value);
-    formData.append('csrfmiddlewaretoken', csrftoken);
-    
-    showLoading(true);
-    
-    fetch('{% url "admin:products_scraping_control" %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        showLoading(false);
-        if (data.status === 'success') {
-            showStatus(data.message);
-        } else {
-            showStatus(data.message, true);
-        }
-    })
-    .catch(error => {
-        showLoading(false);
-        showStatus('Error: ' + error.message, true);
-    });
-});
-
-// Category scraping form
-document.getElementById('category-scrape-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('action', 'scrape_category');
-    formData.append('brand', document.getElementById('category-brand-select').value);
-    formData.append('category', document.getElementById('category-input').value);
-    formData.append('limit', document.getElementById('category-limit').value);
-    formData.append('csrfmiddlewaretoken', csrftoken);
-    
-    showLoading(true);
-    
-    fetch('{% url "admin:products_scraping_control" %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        showLoading(false);
-        if (data.status === 'success') {
-            showStatus(data.message);
-        } else {
-            showStatus(data.message, true);
-        }
-    })
-    .catch(error => {
-        showLoading(false);
-        showStatus('Error: ' + error.message, true);
-    });
-});
-
-// Product scraping form
-document.getElementById('product-scrape-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData();
-    formData.append('action', 'scrape_product');
-    formData.append('url', document.getElementById('product-url').value);
-    formData.append('csrfmiddlewaretoken', csrftoken);
-    
-    showLoading(true);
-    
-    fetch('{% url "admin:products_scraping_control" %}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        showLoading(false);
-        if (data.status === 'success') {
-            showStatus(data.message);
-        } else {
-            showStatus(data.message, true);
-        }
-    })
-    .catch(error => {
-        showLoading(false);
-        showStatus('Error: ' + error.message, true);
-    });
-});
-
-// Quick action functions
-function scrapePopularBrands() {
-    const brands = ['HUUM', 'Harvia', 'Mr.Steam'];
-    showLoading(true);
-    showStatus('Starting to scrape popular brands...');
-    
-    // Scrape each brand sequentially
-    let currentBrand = 0;
-    
-    function scrapeNextBrand() {
-        if (currentBrand >= brands.length) {
-            showLoading(false);
-            showStatus('Completed scraping all popular brands!');
-            return;
-        }
-        
-        const brand = brands[currentBrand];
-        const formData = new FormData();
-        formData.append('action', 'scrape_brand');
-        formData.append('brand', brand);
-        formData.append('limit', '5');
-        formData.append('csrfmiddlewaretoken', csrftoken);
-        
-        fetch('{% url "admin:products_scraping_control" %}', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            showStatus(`Completed ${brand}: ${data.message}`);
-            currentBrand++;
-            setTimeout(scrapeNextBrand, 2000); // Wait 2 seconds between brands
-        })
-        .catch(error => {
-            showStatus(`Error scraping ${brand}: ${error.message}`, true);
-            currentBrand++;
-            setTimeout(scrapeNextBrand, 2000);
-        });
-    }
-    
-    scrapeNextBrand();
-}
-
-function scrapeAllBrands() {
-    if (confirm('This will scrape a limited number of products from all brands. This may take a long time. Continue?')) {
-        showLoading(true);
-        showStatus('Starting to scrape all brands with limited products...');
-        
-        // This would need to be implemented as a background task in a real application
-        showStatus('All brands scraping started. Check back later for results.');
-    }
-}
-</script>
 {% endblock %} 

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category_name }} Products - Product Catalog{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'products:home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Products</a></li>
+                    <li class="breadcrumb-item active">{{ category_name }}</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-2">{{ category_name }}</h1>
+            <p class="text-muted">Explore all products in the {{ category_name }} category</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="d-flex gap-2 justify-content-lg-end">
+                <a href="{% url 'products:product_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-th-large me-1"></i>All Products
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Stats -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="card-title mb-2">{{ category_name }} Category</h4>
+                            <p class="card-text mb-0">Browse our selection of {{ category_name|lower }} products</p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="h2 mb-0">{{ total_products }} Products</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="row g-4">
+        {% for product in products %}
+        <div class="col-lg-3 col-md-6">
+            <div class="card product-card h-100">
+                {% if product.images.first %}
+                    <img src="{{ product.images.first.image_url }}" 
+                         class="card-img-top product-image" 
+                         alt="{{ product.title }}"
+                         onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                {% else %}
+                    <div class="card-img-top product-image bg-light d-flex align-items-center justify-content-center">
+                        <i class="fas fa-hot-tub fa-3x text-muted"></i>
+                    </div>
+                {% endif %}
+                
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-2">
+                        <span class="brand-badge">{{ product.brand }}</span>
+                        {% if product.category %}
+                            <span class="badge bg-light text-dark ms-1">{{ product.category|truncatechars:15 }}</span>
+                        {% endif %}
+                    </div>
+                    <h5 class="card-title">{{ product.title|truncatechars:60 }}</h5>
+                    <p class="card-text text-muted flex-grow-1">{{ product.short_description|truncatechars:120 }}</p>
+                    
+                    <div class="mt-auto">
+                        {% if product.price %}
+                            <div class="price mb-3">${{ product.price|floatformat:0 }}</div>
+                        {% endif %}
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'products:product_detail' product.slug %}" class="btn btn-primary flex-grow-1">
+                                <i class="fas fa-eye me-1"></i>View Details
+                            </a>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="fas fa-tag me-1"></i>{{ product.sku }}
+                                {% if product.model %}
+                                    | {{ product.model }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No {{ category_name }} products found</h4>
+                <p class="text-muted">Check back later or browse other categories.</p>
+                <a href="{% url 'products:product_list' %}" class="btn btn-primary">
+                    <i class="fas fa-th-large me-2"></i>View All Products
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <nav aria-label="Product pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

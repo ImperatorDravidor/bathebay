@@ -1,0 +1,82 @@
+{% load brand_extras %}
+
+<div class="col-6 col-md-4 col-lg-3 col-xl-2 mb-4">
+    <div class="card text-center h-100 brand-card-hover">
+        <div class="card-body d-flex flex-column">
+            {% if show_logo %}
+            <div class="mb-3 brand-logo-container">
+                <a href="{% url 'products:product_list' %}?brand={{ brand.brand }}" class="d-block">
+                    {% brand_logo_img brand.brand "brand-logo img-fluid" %}
+                </a>
+            </div>
+            {% endif %}
+            
+            <h6 class="card-title brand-name">{{ brand.brand }}</h6>
+            
+            {% if show_stats %}
+            <p class="text-muted mb-3 small">
+                {{ brand.product_count }} product{{ brand.product_count|pluralize }}
+            </p>
+            {% endif %}
+            
+            <div class="mt-auto">
+                <a href="{% url 'products:product_list' %}?brand={{ brand.brand }}" 
+                   class="btn btn-outline-primary btn-sm w-100">
+                    <i class="fas fa-arrow-right me-1"></i>View Products
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.brand-card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #e0e0e0;
+}
+
+.brand-card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.brand-logo-container {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.brand-logo {
+    max-height: 70px;
+    max-width: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.brand-logo:hover {
+    transform: scale(1.05);
+}
+
+.brand-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 576px) {
+    .brand-logo-container {
+        height: 60px;
+    }
+    
+    .brand-logo {
+        max-height: 50px;
+    }
+    
+    .brand-name {
+        font-size: 0.8rem;
+    }
+}
+</style> 
